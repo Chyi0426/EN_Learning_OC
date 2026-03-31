@@ -7,10 +7,12 @@ EN Learning Review Card Generator
 import re
 import os
 import random
+import subprocess
 from datetime import datetime
 
 BASE_DIR = "/Users/raymond.zhong/Desktop/EN_Learning_OC"
 OUTPUT_FILE = os.path.join(BASE_DIR, "daily_review.html")
+DOCS_FILE = os.path.join(BASE_DIR, "docs", "index.html")
 
 def parse_vocabulary(filepath):
     """解析单词库，提取每个单词条目"""
@@ -430,6 +432,26 @@ def generate_html(items):
 </html>'''
     return html
 
+def sync_to_github():
+    """将更新同步到 GitHub Pages"""
+    try:
+        subprocess.run(["git", "add", "-A"], cwd=BASE_DIR, capture_output=True)
+        today = datetime.now().strftime("%Y-%m-%d %H:%M")
+        subprocess.run(
+            ["git", "commit", "-m", f"update: daily review {today}"],
+            cwd=BASE_DIR, capture_output=True
+        )
+        result = subprocess.run(
+            ["git", "push"],
+            cwd=BASE_DIR, capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            print("已同步到 GitHub Pages：https://chyi0426.github.io/EN_Learning_OC/")
+        else:
+            print(f"GitHub 同步失败：{result.stderr}")
+    except Exception as e:
+        print(f"GitHub 同步出错：{e}")
+
 def main():
     vocab = parse_vocabulary(os.path.join(BASE_DIR, "vocabulary", "words.md"))
     usage = parse_usage(os.path.join(BASE_DIR, "usage", "usage.md"))
@@ -444,11 +466,20 @@ def main():
     selected = select_review_items(all_items)
     html = generate_html(selected)
     
+    # 写入本地文件
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        f.write(html)
+    
+    # 同时写入 docs/ 目录供 GitHub Pages 使用
+    os.makedirs(os.path.dirname(DOCS_FILE), exist_ok=True)
+    with open(DOCS_FILE, "w", encoding="utf-8") as f:
         f.write(html)
     
     print(f"已生成每日复习卡片：{OUTPUT_FILE}")
     print(f"共 {len(selected)} 个知识点（薄弱项 {len([i for i in selected if i['count']>=3])} | 待巩固 {len([i for i in selected if i['count']==2])} | 新学 {len([i for i in selected if i['count']==1])}）")
+    
+    # 自动同步到 GitHub Pages
+    sync_to_github()
 
 if __name__ == "__main__":
     main()
