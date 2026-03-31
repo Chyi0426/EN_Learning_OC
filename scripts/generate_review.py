@@ -156,48 +156,19 @@ def select_review_items(all_items, max_items=10):
     return selected[:max_items]
 
 def generate_html(items):
-    """生成复习卡片 HTML 页面"""
+    """生成带自测打分和间隔复习的 HTML 页面"""
     today = datetime.now().strftime("%Y-%m-%d")
     
-    cards_html = ""
-    for i, item in enumerate(items):
-        level = "weak" if item["count"] >= 3 else ("medium" if item["count"] == 2 else "new")
-        level_text = "薄弱项" if level == "weak" else ("待巩固" if level == "medium" else "新学")
-        level_emoji = "🔴" if level == "weak" else ("🟡" if level == "medium" else "🟢")
-        type_text = {"vocabulary": "单词", "usage": "用法", "grammar": "语法"}.get(item["type"], "其他")
-        
-        meaning_escaped = item["meaning"].replace("\n", "<br>").replace("  ", "&nbsp;&nbsp;")
-        
-        example_html = ""
-        if item.get("example_en"):
-            example_html = f'''
-            <div class="example">
-                <div class="example-en">{item["example_en"]}</div>
-                <div class="example-cn">{item.get("example_cn", "")}</div>
-            </div>'''
-        
-        cards_html += f'''
-        <div class="card" id="card-{i}" data-index="{i}">
-            <div class="card-inner" onclick="this.classList.toggle('flipped')">
-                <div class="card-front">
-                    <div class="card-badge {level}">{level_emoji} {level_text}</div>
-                    <div class="card-type">{type_text}</div>
-                    <div class="card-word">{item["word"]}</div>
-                    <div class="card-hint">点击卡片查看答案</div>
-                    <div class="card-count">已提问 {item["count"]} 次</div>
-                </div>
-                <div class="card-back">
-                    <div class="card-badge {level}">{level_emoji} {level_text}</div>
-                    <div class="card-word-small">{item["word"]}</div>
-                    <div class="card-meaning">{meaning_escaped}</div>
-                    {example_html}
-                </div>
-            </div>
-        </div>'''
-    
-    weak_count = len([i for i in items if i["count"] >= 3])
-    medium_count = len([i for i in items if i["count"] == 2])
-    new_count = len([i for i in items if i["count"] == 1])
+    import json
+    items_json = json.dumps([{
+        "id": f"{item['type']}_{item['word'].replace(' ', '_').replace('/', '_')}",
+        "word": item["word"],
+        "meaning": item["meaning"].replace("\n", "<br>").replace("  ", "&nbsp;&nbsp;"),
+        "count": item["count"],
+        "type": item["type"],
+        "example_en": item.get("example_en", ""),
+        "example_cn": item.get("example_cn", ""),
+    } for item in items], ensure_ascii=False)
     
     html = f'''<!DOCTYPE html>
 <html lang="zh-CN">
@@ -206,227 +177,507 @@ def generate_html(items):
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>每日英文复习 - {today}</title>
     <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        * {{ margin:0; padding:0; box-sizing:border-box; }}
         body {{
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            min-height: 100vh;
-            color: #fff;
-            padding: 20px;
+            min-height: 100vh; color: #fff; padding: 16px;
         }}
-        .header {{
-            text-align: center;
-            padding: 30px 0;
-        }}
-        .header h1 {{
-            font-size: 28px;
-            margin-bottom: 8px;
-        }}
-        .header .date {{
-            color: #aaa;
-            font-size: 14px;
-        }}
+        .header {{ text-align:center; padding:20px 0; }}
+        .header h1 {{ font-size:24px; margin-bottom:6px; }}
+        .header .date {{ color:#aaa; font-size:13px; }}
         .stats {{
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin: 20px 0 30px;
-            flex-wrap: wrap;
+            display:flex; justify-content:center; gap:10px;
+            margin:16px 0; flex-wrap:wrap;
         }}
         .stat-item {{
-            background: rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 12px 20px;
-            text-align: center;
-            min-width: 100px;
+            background:rgba(255,255,255,0.1); border-radius:10px;
+            padding:10px 16px; text-align:center; min-width:70px;
         }}
-        .stat-num {{ font-size: 24px; font-weight: bold; }}
-        .stat-label {{ font-size: 12px; color: #aaa; margin-top: 4px; }}
-        .cards-container {{
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
+        .stat-num {{ font-size:22px; font-weight:bold; }}
+        .stat-label {{ font-size:11px; color:#aaa; margin-top:3px; }}
+        .progress-bar {{
+            max-width:500px; margin:0 auto 20px; background:rgba(255,255,255,0.1);
+            border-radius:10px; height:8px; overflow:hidden;
+        }}
+        .progress-fill {{
+            height:100%; border-radius:10px; transition:width 0.5s ease;
+            background: linear-gradient(90deg, #34c759, #30d158);
+        }}
+        .progress-text {{
+            text-align:center; font-size:12px; color:#aaa; margin-bottom:20px;
+        }}
+        .card-wrapper {{
+            max-width:400px; margin:0 auto; position:relative;
+            min-height:350px;
         }}
         .card {{
-            width: 320px;
-            height: 280px;
-            perspective: 1000px;
-            cursor: pointer;
+            width:100%; min-height:300px; perspective:1000px;
+            display:none; flex-direction:column;
         }}
+        .card.active {{ display:flex; }}
         .card-inner {{
-            width: 100%;
-            height: 100%;
-            transition: transform 0.6s;
-            transform-style: preserve-3d;
-            position: relative;
+            width:100%; min-height:300px; transition:transform 0.6s;
+            transform-style:preserve-3d; position:relative; cursor:pointer;
         }}
-        .card-inner.flipped {{
-            transform: rotateY(180deg);
-        }}
+        .card-inner.flipped {{ transform:rotateY(180deg); }}
         .card-front, .card-back {{
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            border-radius: 16px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            position:absolute; width:100%; min-height:300px;
+            backface-visibility:hidden; border-radius:16px; padding:24px;
+            display:flex; flex-direction:column; justify-content:center; align-items:center;
         }}
         .card-front {{
-            background: linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
-            border: 1px solid rgba(255,255,255,0.2);
-            backdrop-filter: blur(10px);
+            background:linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+            border:1px solid rgba(255,255,255,0.2);
         }}
         .card-back {{
-            background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08));
-            border: 1px solid rgba(255,255,255,0.3);
-            backdrop-filter: blur(10px);
-            transform: rotateY(180deg);
-            overflow-y: auto;
-            justify-content: flex-start;
-            align-items: flex-start;
+            background:linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08));
+            border:1px solid rgba(255,255,255,0.3);
+            transform:rotateY(180deg); overflow-y:auto;
+            justify-content:flex-start; align-items:flex-start;
         }}
         .card-badge {{
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            font-size: 11px;
-            padding: 3px 8px;
-            border-radius: 20px;
+            position:absolute; top:12px; right:12px; font-size:11px;
+            padding:3px 8px; border-radius:20px;
         }}
-        .card-badge.weak {{ background: rgba(255,59,48,0.3); }}
-        .card-badge.medium {{ background: rgba(255,204,0,0.3); }}
-        .card-badge.new {{ background: rgba(52,199,89,0.3); }}
-        .card-type {{
-            font-size: 12px;
-            color: #aaa;
-            margin-bottom: 8px;
+        .card-badge.weak {{ background:rgba(255,59,48,0.3); }}
+        .card-badge.medium {{ background:rgba(255,204,0,0.3); }}
+        .card-badge.new {{ background:rgba(52,199,89,0.3); }}
+        .card-badge.mastered {{ background:rgba(100,100,255,0.3); }}
+        .card-type {{ font-size:12px; color:#aaa; margin-bottom:8px; }}
+        .card-word {{ font-size:30px; font-weight:bold; margin:10px 0; }}
+        .card-hint {{ font-size:12px; color:#888; margin-top:12px; }}
+        .card-count {{ font-size:11px; color:#666; margin-top:8px; }}
+        .card-word-small {{ font-size:20px; font-weight:bold; margin-bottom:12px; color:#7dd3fc; }}
+        .card-meaning {{ font-size:14px; line-height:1.6; color:#ddd; }}
+        .example {{ margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); width:100%; }}
+        .example-en {{ font-size:13px; color:#7dd3fc; font-style:italic; }}
+        .example-cn {{ font-size:12px; color:#aaa; margin-top:4px; }}
+        .rating-buttons {{
+            display:flex; gap:10px; margin-top:20px; width:100%;
+            justify-content:center;
         }}
-        .card-word {{
-            font-size: 32px;
-            font-weight: bold;
-            margin: 10px 0;
+        .rating-btn {{
+            padding:12px 20px; border:none; border-radius:10px;
+            font-size:14px; font-weight:600; cursor:pointer; flex:1;
+            max-width:120px; transition:transform 0.15s, opacity 0.15s;
         }}
-        .card-word-small {{
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 12px;
-            color: #7dd3fc;
+        .rating-btn:active {{ transform:scale(0.95); }}
+        .rating-btn.forgot {{
+            background:linear-gradient(135deg, #ff3b30, #ff6b6b); color:#fff;
         }}
-        .card-hint {{
-            font-size: 12px;
-            color: #888;
-            margin-top: 12px;
+        .rating-btn.fuzzy {{
+            background:linear-gradient(135deg, #ff9500, #ffcc00); color:#333;
         }}
-        .card-count {{
-            font-size: 11px;
-            color: #666;
-            margin-top: 8px;
-        }}
-        .card-meaning {{
-            font-size: 14px;
-            line-height: 1.6;
-            color: #ddd;
-        }}
-        .example {{
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            width: 100%;
-        }}
-        .example-en {{
-            font-size: 13px;
-            color: #7dd3fc;
-            font-style: italic;
-        }}
-        .example-cn {{
-            font-size: 12px;
-            color: #aaa;
-            margin-top: 4px;
+        .rating-btn.known {{
+            background:linear-gradient(135deg, #34c759, #30d158); color:#fff;
         }}
         .nav {{
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-top: 30px;
+            display:flex; justify-content:center; gap:12px; margin-top:20px;
         }}
         .nav button {{
-            background: rgba(255,255,255,0.15);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: #fff;
-            padding: 10px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.2s;
+            background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2);
+            color:#fff; padding:10px 20px; border-radius:8px; cursor:pointer;
+            font-size:13px; transition:background 0.2s;
         }}
-        .nav button:hover {{
-            background: rgba(255,255,255,0.25);
+        .nav button:hover {{ background:rgba(255,255,255,0.25); }}
+        .nav button:disabled {{ opacity:0.3; cursor:not-allowed; }}
+        .summary {{
+            display:none; max-width:400px; margin:0 auto; text-align:center;
+            background:rgba(255,255,255,0.1); border-radius:16px; padding:30px;
         }}
-        .footer {{
-            text-align: center;
-            margin-top: 40px;
-            color: #666;
-            font-size: 12px;
+        .summary h2 {{ font-size:22px; margin-bottom:16px; }}
+        .summary-stats {{ display:flex; justify-content:center; gap:20px; margin:20px 0; }}
+        .summary-item {{ text-align:center; }}
+        .summary-item .num {{ font-size:28px; font-weight:bold; }}
+        .summary-item .label {{ font-size:12px; color:#aaa; margin-top:4px; }}
+        .history {{ max-width:400px; margin:20px auto; }}
+        .history h3 {{ font-size:16px; margin-bottom:10px; color:#aaa; }}
+        .history-item {{
+            display:flex; justify-content:space-between; align-items:center;
+            padding:8px 12px; border-bottom:1px solid rgba(255,255,255,0.05);
+            font-size:13px;
         }}
+        .history-dot {{ width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:8px; }}
+        .dot-red {{ background:#ff3b30; }}
+        .dot-yellow {{ background:#ffcc00; }}
+        .dot-green {{ background:#34c759; }}
+        .footer {{ text-align:center; margin-top:40px; color:#666; font-size:12px; }}
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Daily English Review</h1>
-        <div class="date">{today} | 点击卡片翻转查看答案</div>
+        <div class="date">{today}</div>
     </div>
     <div class="stats">
         <div class="stat-item">
-            <div class="stat-num">{len(items)}</div>
-            <div class="stat-label">今日复习</div>
+            <div class="stat-num" id="stat-total">0</div>
+            <div class="stat-label">总数</div>
         </div>
         <div class="stat-item">
-            <div class="stat-num" style="color:#ff3b30">{weak_count}</div>
-            <div class="stat-label">薄弱项</div>
+            <div class="stat-num" id="stat-done" style="color:#34c759">0</div>
+            <div class="stat-label">已完成</div>
         </div>
         <div class="stat-item">
-            <div class="stat-num" style="color:#ffcc00">{medium_count}</div>
-            <div class="stat-label">待巩固</div>
+            <div class="stat-num" id="stat-known" style="color:#34c759">0</div>
+            <div class="stat-label">认识</div>
         </div>
         <div class="stat-item">
-            <div class="stat-num" style="color:#34c759">{new_count}</div>
-            <div class="stat-label">新学</div>
+            <div class="stat-num" id="stat-fuzzy" style="color:#ffcc00">0</div>
+            <div class="stat-label">模糊</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-num" id="stat-forgot" style="color:#ff3b30">0</div>
+            <div class="stat-label">不认识</div>
         </div>
     </div>
-    <div class="cards-container">
-        {cards_html}
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="progress-text" id="progress-text">点击卡片翻转，然后评估你的掌握程度</div>
+
+    <div class="card-wrapper" id="card-wrapper"></div>
+
+    <div class="summary" id="summary">
+        <h2>今日复习完成！</h2>
+        <div class="summary-stats">
+            <div class="summary-item">
+                <div class="num" id="sum-known" style="color:#34c759">0</div>
+                <div class="label">认识</div>
+            </div>
+            <div class="summary-item">
+                <div class="num" id="sum-fuzzy" style="color:#ffcc00">0</div>
+                <div class="label">模糊</div>
+            </div>
+            <div class="summary-item">
+                <div class="num" id="sum-forgot" style="color:#ff3b30">0</div>
+                <div class="label">不认识</div>
+            </div>
+        </div>
+        <div class="progress-text" id="sum-rate"></div>
+        <div class="nav" style="margin-top:20px">
+            <button onclick="restartWeak()">重新复习「不认识+模糊」</button>
+            <button onclick="restartAll()">全部重新复习</button>
+        </div>
+        <div class="history" id="history">
+            <h3>本次详情</h3>
+        </div>
     </div>
-    <div class="nav">
-        <button onclick="flipAll(false)">全部翻回正面</button>
-        <button onclick="flipAll(true)">全部显示答案</button>
-        <button onclick="shuffleCards()">随机排列</button>
+
+    <div class="nav" id="nav-buttons">
+        <button id="btn-prev" onclick="prevCard()" disabled>&larr; 上一个</button>
+        <button id="btn-skip" onclick="skipCard()">跳过 &rarr;</button>
     </div>
+
+    <div class="history" id="past-sessions" style="display:none">
+        <h3>历史复习记录</h3>
+        <div id="past-list"></div>
+    </div>
+
     <div class="footer">
-        EN Learning Knowledge Base | Generated at {datetime.now().strftime("%H:%M:%S")}
+        EN Learning Knowledge Base | {today}<br>
+        <span style="cursor:pointer;text-decoration:underline" onclick="document.getElementById('past-sessions').style.display=document.getElementById('past-sessions').style.display==='none'?'block':'none'">查看历史记录</span>
+        &nbsp;|&nbsp;
+        <span style="cursor:pointer;text-decoration:underline" onclick="clearHistory()">清除本地数据</span>
     </div>
+
     <script>
-        function flipAll(show) {{
-            document.querySelectorAll('.card-inner').forEach(el => {{
-                if (show) el.classList.add('flipped');
-                else el.classList.remove('flipped');
-            }});
-        }}
-        function shuffleCards() {{
-            const container = document.querySelector('.cards-container');
-            const cards = Array.from(container.children);
-            for (let i = cards.length - 1; i > 0; i--) {{
-                const j = Math.floor(Math.random() * (i + 1));
-                container.appendChild(cards[j]);
-                cards.splice(j, 1, cards[i]);
+    const ALL_ITEMS = {items_json};
+    const STORAGE_KEY = 'en_review_data';
+    const SESSION_KEY = 'en_review_sessions';
+
+    let currentIndex = 0;
+    let results = {{}};
+    let reviewQueue = [];
+
+    // ========== 间隔复习算法 ==========
+    function getReviewData() {{
+        try {{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {{}}; }}
+        catch(e) {{ return {{}}; }}
+    }}
+    function saveReviewData(data) {{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }}
+
+    function shouldReviewToday(itemData) {{
+        if (!itemData || !itemData.lastReview) return true;
+        const now = new Date();
+        const last = new Date(itemData.lastReview);
+        const daysSince = Math.floor((now - last) / 86400000);
+        // 间隔复习间距：不认识=1天, 模糊=2天, 认识=按次数递增(1,2,4,7,14,30)
+        const intervals = [1, 2, 4, 7, 14, 30, 60];
+        if (itemData.lastRating === 'forgot') return daysSince >= 1;
+        if (itemData.lastRating === 'fuzzy') return daysSince >= 2;
+        // known: 根据连续答对次数决定间隔
+        const streak = itemData.streak || 0;
+        const interval = intervals[Math.min(streak, intervals.length - 1)];
+        return daysSince >= interval;
+    }}
+
+    function buildReviewQueue() {{
+        const data = getReviewData();
+        let needReview = [];
+        let noRecord = [];
+
+        ALL_ITEMS.forEach(item => {{
+            const d = data[item.id];
+            if (!d) {{
+                noRecord.push(item);
+            }} else if (shouldReviewToday(d)) {{
+                item._priority = d.lastRating === 'forgot' ? 0 : (d.lastRating === 'fuzzy' ? 1 : 2);
+                needReview.push(item);
             }}
+        }});
+
+        // 排序：不认识 > 模糊 > 认识
+        needReview.sort((a, b) => (a._priority || 0) - (b._priority || 0));
+        // 没有记录的放后面
+        reviewQueue = [...needReview, ...noRecord];
+        
+        if (reviewQueue.length === 0) {{
+            reviewQueue = [...ALL_ITEMS]; // 全部已掌握就全部复习
         }}
+    }}
+
+    // ========== 卡片渲染 ==========
+    function renderCards() {{
+        const wrapper = document.getElementById('card-wrapper');
+        wrapper.innerHTML = '';
+        const data = getReviewData();
+
+        reviewQueue.forEach((item, i) => {{
+            const d = data[item.id];
+            let level, levelText, levelEmoji;
+            if (d && d.lastRating === 'forgot') {{
+                level='weak'; levelText='不认识'; levelEmoji='🔴';
+            }} else if (d && d.lastRating === 'fuzzy') {{
+                level='medium'; levelText='模糊'; levelEmoji='🟡';
+            }} else if (d && d.streak >= 3) {{
+                level='mastered'; levelText='已掌握'; levelEmoji='🔵';
+            }} else {{
+                level='new'; levelText='待复习'; levelEmoji='🟢';
+            }}
+            const typeText = {{'vocabulary':'单词','usage':'用法','grammar':'语法'}}[item.type]||'其他';
+            const exHtml = item.example_en ? `
+                <div class="example">
+                    <div class="example-en">${{item.example_en}}</div>
+                    <div class="example-cn">${{item.example_cn}}</div>
+                </div>` : '';
+            const streakInfo = d ? `连续认识 ${{d.streak||0}} 次` : '首次复习';
+
+            const card = document.createElement('div');
+            card.className = 'card' + (i === 0 ? ' active' : '');
+            card.dataset.index = i;
+            card.innerHTML = `
+                <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                    <div class="card-front">
+                        <div class="card-badge ${{level}}">${{levelEmoji}} ${{levelText}}</div>
+                        <div class="card-type">${{typeText}} | ${{i+1}}/${{reviewQueue.length}}</div>
+                        <div class="card-word">${{item.word}}</div>
+                        <div class="card-hint">点击卡片查看答案</div>
+                        <div class="card-count">${{streakInfo}}</div>
+                    </div>
+                    <div class="card-back">
+                        <div class="card-badge ${{level}}">${{levelEmoji}} ${{levelText}}</div>
+                        <div class="card-word-small">${{item.word}}</div>
+                        <div class="card-meaning">${{item.meaning}}</div>
+                        ${{exHtml}}
+                    </div>
+                </div>
+                <div class="rating-buttons">
+                    <button class="rating-btn forgot" onclick="rate('${{item.id}}', 'forgot', event)">不认识</button>
+                    <button class="rating-btn fuzzy" onclick="rate('${{item.id}}', 'fuzzy', event)">模糊</button>
+                    <button class="rating-btn known" onclick="rate('${{item.id}}', 'known', event)">认识</button>
+                </div>`;
+            wrapper.appendChild(card);
+        }});
+        updateStats();
+    }}
+
+    // ========== 打分逻辑 ==========
+    function rate(id, rating, event) {{
+        event.stopPropagation();
+        results[id] = rating;
+
+        // 更新 localStorage 中的间隔复习数据
+        const data = getReviewData();
+        if (!data[id]) data[id] = {{ streak: 0, totalReviews: 0, history: [] }};
+        data[id].lastReview = new Date().toISOString();
+        data[id].lastRating = rating;
+        data[id].totalReviews = (data[id].totalReviews || 0) + 1;
+        if (rating === 'known') {{
+            data[id].streak = (data[id].streak || 0) + 1;
+        }} else {{
+            data[id].streak = 0;
+        }}
+        // 保存最近5次记录
+        if (!data[id].history) data[id].history = [];
+        data[id].history.push({{ date: new Date().toISOString().slice(0,10), rating }});
+        if (data[id].history.length > 10) data[id].history = data[id].history.slice(-10);
+        saveReviewData(data);
+
+        updateStats();
+        // 自动跳转下一张
+        setTimeout(() => nextCard(), 400);
+    }}
+
+    // ========== 导航 ==========
+    function nextCard() {{
+        const cards = document.querySelectorAll('.card');
+        if (currentIndex < cards.length - 1) {{
+            cards[currentIndex].classList.remove('active');
+            currentIndex++;
+            cards[currentIndex].classList.add('active');
+            // 重置翻转状态
+            cards[currentIndex].querySelector('.card-inner').classList.remove('flipped');
+            updateNav();
+            updateStats();
+        }} else {{
+            showSummary();
+        }}
+    }}
+    function prevCard() {{
+        const cards = document.querySelectorAll('.card');
+        if (currentIndex > 0) {{
+            cards[currentIndex].classList.remove('active');
+            currentIndex--;
+            cards[currentIndex].classList.add('active');
+            updateNav();
+        }}
+    }}
+    function skipCard() {{ nextCard(); }}
+
+    function updateNav() {{
+        document.getElementById('btn-prev').disabled = currentIndex === 0;
+    }}
+
+    // ========== 统计更新 ==========
+    function updateStats() {{
+        const total = reviewQueue.length;
+        const done = Object.keys(results).length;
+        const known = Object.values(results).filter(r=>r==='known').length;
+        const fuzzy = Object.values(results).filter(r=>r==='fuzzy').length;
+        const forgot = Object.values(results).filter(r=>r==='forgot').length;
+
+        document.getElementById('stat-total').textContent = total;
+        document.getElementById('stat-done').textContent = done;
+        document.getElementById('stat-known').textContent = known;
+        document.getElementById('stat-fuzzy').textContent = fuzzy;
+        document.getElementById('stat-forgot').textContent = forgot;
+
+        const pct = total > 0 ? Math.round(done / total * 100) : 0;
+        document.getElementById('progress-fill').style.width = pct + '%';
+        document.getElementById('progress-text').textContent =
+            done === 0 ? '点击卡片翻转，然后评估你的掌握程度'
+            : `已完成 ${{done}}/${{total}}（正确率 ${{total > 0 ? Math.round(known/Math.max(done,1)*100) : 0}}%）`;
+    }}
+
+    // ========== 完成总结 ==========
+    function showSummary() {{
+        document.getElementById('card-wrapper').style.display = 'none';
+        document.getElementById('nav-buttons').style.display = 'none';
+        const summary = document.getElementById('summary');
+        summary.style.display = 'block';
+
+        const known = Object.values(results).filter(r=>r==='known').length;
+        const fuzzy = Object.values(results).filter(r=>r==='fuzzy').length;
+        const forgot = Object.values(results).filter(r=>r==='forgot').length;
+        const total = known + fuzzy + forgot;
+
+        document.getElementById('sum-known').textContent = known;
+        document.getElementById('sum-fuzzy').textContent = fuzzy;
+        document.getElementById('sum-forgot').textContent = forgot;
+        document.getElementById('sum-rate').textContent =
+            `正确率 ${{Math.round(known/Math.max(total,1)*100)}}% | 模糊的词会在2天后再次出现，不认识的词明天就会再次出现`;
+
+        // 详情列表
+        const history = document.getElementById('history');
+        let listHtml = '';
+        reviewQueue.forEach(item => {{
+            const r = results[item.id];
+            if (!r) return;
+            const dotClass = r==='known'?'dot-green':(r==='fuzzy'?'dot-yellow':'dot-red');
+            const ratingText = r==='known'?'认识':(r==='fuzzy'?'模糊':'不认识');
+            listHtml += `<div class="history-item">
+                <span><span class="history-dot ${{dotClass}}"></span>${{item.word}}</span>
+                <span>${{ratingText}}</span>
+            </div>`;
+        }});
+        history.innerHTML = '<h3>本次详情</h3>' + listHtml;
+
+        // 保存本次 session
+        saveSession(known, fuzzy, forgot);
+    }}
+
+    function saveSession(known, fuzzy, forgot) {{
+        try {{
+            const sessions = JSON.parse(localStorage.getItem(SESSION_KEY)) || [];
+            sessions.push({{
+                date: new Date().toISOString(),
+                total: known + fuzzy + forgot,
+                known, fuzzy, forgot,
+                rate: Math.round(known / Math.max(known+fuzzy+forgot, 1) * 100)
+            }});
+            if (sessions.length > 30) sessions.splice(0, sessions.length - 30);
+            localStorage.setItem(SESSION_KEY, JSON.stringify(sessions));
+            renderPastSessions();
+        }} catch(e) {{}}
+    }}
+
+    function renderPastSessions() {{
+        try {{
+            const sessions = JSON.parse(localStorage.getItem(SESSION_KEY)) || [];
+            const list = document.getElementById('past-list');
+            if (sessions.length === 0) {{ list.innerHTML = '<div style="color:#666;font-size:12px">暂无记录</div>'; return; }}
+            list.innerHTML = sessions.slice().reverse().map(s => `
+                <div class="history-item">
+                    <span>${{new Date(s.date).toLocaleString('zh-CN',{{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}})}}</span>
+                    <span style="color:#34c759">${{s.known}}</span> /
+                    <span style="color:#ffcc00">${{s.fuzzy}}</span> /
+                    <span style="color:#ff3b30">${{s.forgot}}</span>
+                    <span style="color:#aaa">${{s.rate}}%</span>
+                </div>
+            `).join('');
+        }} catch(e) {{}}
+    }}
+
+    // ========== 重新复习 ==========
+    function restartWeak() {{
+        const weakItems = reviewQueue.filter(item => {{
+            const r = results[item.id];
+            return r === 'forgot' || r === 'fuzzy';
+        }});
+        if (weakItems.length === 0) {{ alert('没有需要重新复习的词！全部认识了！'); return; }}
+        reviewQueue = weakItems;
+        currentIndex = 0;
+        results = {{}};
+        document.getElementById('summary').style.display = 'none';
+        document.getElementById('card-wrapper').style.display = '';
+        document.getElementById('nav-buttons').style.display = '';
+        renderCards();
+    }}
+
+    function restartAll() {{
+        reviewQueue = [...ALL_ITEMS];
+        currentIndex = 0;
+        results = {{}};
+        document.getElementById('summary').style.display = 'none';
+        document.getElementById('card-wrapper').style.display = '';
+        document.getElementById('nav-buttons').style.display = '';
+        renderCards();
+    }}
+
+    function clearHistory() {{
+        if (confirm('确定要清除所有本地学习数据吗？这将重置所有间隔复习进度。')) {{
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(SESSION_KEY);
+            location.reload();
+        }}
+    }}
+
+    // ========== 初始化 ==========
+    buildReviewQueue();
+    renderCards();
+    renderPastSessions();
     </script>
 </body>
 </html>'''
