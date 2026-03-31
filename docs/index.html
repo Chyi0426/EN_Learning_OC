@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日英文复习 - 2026-03-31</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 30px 0;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        .header .date {
+            color: #aaa;
+            font-size: 14px;
+        }
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0 30px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px 20px;
+            text-align: center;
+            min-width: 100px;
+        }
+        .stat-num { font-size: 24px; font-weight: bold; }
+        .stat-label { font-size: 12px; color: #aaa; margin-top: 4px; }
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            width: 320px;
+            height: 280px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+        .card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .card-front {
+            background: linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+        }
+        .card-back {
+            background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08));
+            border: 1px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(10px);
+            transform: rotateY(180deg);
+            overflow-y: auto;
+            justify-content: flex-start;
+            align-items: flex-start;
+        }
+        .card-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 20px;
+        }
+        .card-badge.weak { background: rgba(255,59,48,0.3); }
+        .card-badge.medium { background: rgba(255,204,0,0.3); }
+        .card-badge.new { background: rgba(52,199,89,0.3); }
+        .card-type {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+        .card-word {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .card-word-small {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #7dd3fc;
+        }
+        .card-hint {
+            font-size: 12px;
+            color: #888;
+            margin-top: 12px;
+        }
+        .card-count {
+            font-size: 11px;
+            color: #666;
+            margin-top: 8px;
+        }
+        .card-meaning {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #ddd;
+        }
+        .example {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            width: 100%;
+        }
+        .example-en {
+            font-size: 13px;
+            color: #7dd3fc;
+            font-style: italic;
+        }
+        .example-cn {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 4px;
+        }
+        .nav {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 30px;
+        }
+        .nav button {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .nav button:hover {
+            background: rgba(255,255,255,0.25);
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Daily English Review</h1>
+        <div class="date">2026-03-31 | 点击卡片翻转查看答案</div>
+    </div>
+    <div class="stats">
+        <div class="stat-item">
+            <div class="stat-num">10</div>
+            <div class="stat-label">今日复习</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-num" style="color:#ff3b30">0</div>
+            <div class="stat-label">薄弱项</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-num" style="color:#ffcc00">2</div>
+            <div class="stat-label">待巩固</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-num" style="color:#34c759">8</div>
+            <div class="stat-label">新学</div>
+        </div>
+    </div>
+    <div class="cards-container">
+        
+        <div class="card" id="card-0" data-index="0">
+            <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                <div class="card-front">
+                    <div class="card-badge medium">🟡 待巩固</div>
+                    <div class="card-type">用法</div>
+                    <div class="card-word">时间和地点介词 (AT / IN / ON)</div>
+                    <div class="card-hint">点击卡片查看答案</div>
+                    <div class="card-count">已提问 2 次</div>
+                </div>
+                <div class="card-back">
+                    <div class="card-badge medium">🟡 待巩固</div>
+                    <div class="card-word-small">时间和地点介词 (AT / IN / ON)</div>
+                    <div class="card-meaning">时间和地点介词的选择取决于**范围的大小和具体程度**：<br><br>| 介词 | 时间用法 | 地点用法 | 核心特征 |<br>|------|---------|---------|---------|<br>| **AT** | 具体时刻（精确点） | 具体建筑/地点（点状） | 🎯 精确、点状 |<br>| **IN** | 较长时期（月/季/年） | 地理范围/内部空间 | 📦 范围、内部 |<br>| **ON** | 具体日期/星期 | 表面、街道、方向 | 📄 表面、接触 |</div>
+                    
+                </div>
+            </div>
+        </div>
+        <div class="card" id="card-1" data-index="1">
+            <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                <div class="card-front">
+                    <div class="card-badge medium">🟡 待巩固</div>
+                    <div class="card-type">用法</div>
+                    <div class="card-word">despite vs. in spite of</div>
+                    <div class="card-hint">点击卡片查看答案</div>
+                    <div class="card-count">已提问 2 次</div>
+                </div>
+                <div class="card-back">
+                    <div class="card-badge medium">🟡 待巩固</div>
+                    <div class="card-word-small">despite vs. in spite of</div>
+                    <div class="card-meaning">despite 和 in spite of 都表示"尽管"的意思，但在使用场景和正式程度上有区别：<br><br>| 对比项 | despite | in spite of |<br>|-------|---------|------------|<br>| 正式程度 | 更正式、更学术 | 较口语化、较随意 |<br>| 使用频率 | 高（特别在书面语中） | 中等 |<br>| 语言风格 | 简洁、直接 | 相对冗长 |</div>
+                    
+                </div>
+            </div>
+        </div>
+        <div class="card" id="card-2" data-index="2">
+            <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                <div class="card-front">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-type">单词</div>
+                    <div class="card-word">illuminate</div>
+                    <div class="card-hint">点击卡片查看答案</div>
+                    <div class="card-count">已提问 1 次</div>
+                </div>
+                <div class="card-back">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-word-small">illuminate</div>
+                    <div class="card-meaning">- [动词]：照亮、阐明、装饰（建筑物）<br>&nbsp;&nbsp;- [形容词]：被照亮的、明亮的</div>
+                    
+            <div class="example">
+                <div class="example-en">*The candles **illuminate** the room.* (动词 - 蜡烛照亮房间)</div>
+                <div class="example-cn">路灯在夜间照亮道路。</div>
+            </div>
+                </div>
+            </div>
+        </div>
+        <div class="card" id="card-3" data-index="3">
+            <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                <div class="card-front">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-type">单词</div>
+                    <div class="card-word">despite</div>
+                    <div class="card-hint">点击卡片查看答案</div>
+                    <div class="card-count">已提问 1 次</div>
+                </div>
+                <div class="card-back">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-word-small">despite</div>
+                    <div class="card-meaning">- [介词]：尽管、不顾、虽然<br>&nbsp;&nbsp;- [名词]（较少用）：恶意、蔑视</div>
+                    
+            <div class="example">
+                <div class="example-en">Despite the challenges, the team succeeded.</div>
+                <div class="example-cn">尽管有挑战，团队还是成功了。</div>
+            </div>
+                </div>
+            </div>
+        </div>
+        <div class="card" id="card-4" data-index="4">
+            <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                <div class="card-front">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-type">单词</div>
+                    <div class="card-word">thrilled</div>
+                    <div class="card-hint">点击卡片查看答案</div>
+                    <div class="card-count">已提问 1 次</div>
+                </div>
+                <div class="card-back">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-word-small">thrilled</div>
+                    <div class="card-meaning">- [形容词]：兴高采烈的、高兴极了的、激动的</div>
+                    
+            <div class="example">
+                <div class="example-en">*thrilled about the promotion* vs. *excited about the party*</div>
+                <div class="example-cn">经过多年努力，我为能获得这个升职机会感到高兴极了。</div>
+            </div>
+                </div>
+            </div>
+        </div>
+        <div class="card" id="card-5" data-index="5">
+            <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                <div class="card-front">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-type">单词</div>
+                    <div class="card-word">simulate</div>
+                    <div class="card-hint">点击卡片查看答案</div>
+                    <div class="card-count">已提问 1 次</div>
+                </div>
+                <div class="card-back">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-word-small">simulate</div>
+                    <div class="card-meaning">- [动词]：模拟、模仿、假装、装作</div>
+                    
+            <div class="example">
+                <div class="example-en">*Simulate a flight.* vs. *Imitate a voice.*</div>
+                <div class="example-cn">飞行员在真正的飞行前模拟各种应急场景。</div>
+            </div>
+                </div>
+            </div>
+        </div>
+        <div class="card" id="card-6" data-index="6">
+            <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                <div class="card-front">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-type">用法</div>
+                    <div class="card-word">英文中"闻"的表述方法 (smell / sniff / whiff / reek / stink)</div>
+                    <div class="card-hint">点击卡片查看答案</div>
+                    <div class="card-count">已提问 1 次</div>
+                </div>
+                <div class="card-back">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-word-small">英文中"闻"的表述方法 (smell / sniff / whiff / reek / stink)</div>
+                    <div class="card-meaning">英文中没有一个单词能完全区分"香味的闻"和"难闻气味的闻"。而是通过**不同动词和形容词搭配**来表达：<br><br>| 动词 | 用法 | 气味属性 | 用途 |<br>|------|------|--------|------|<br>| **smell** | *smell sth.* 或 *sth. smells + adj.* | 中立 | 最常用，任何气味 |<br>| **sniff** | *sniff sth.* | 中立 | 强调主动、仔细的动作 |<br>| **whiff** | *get/catch a whiff of* | 中立 | 微弱、短暂的气味 |<br>| **reek** | *reek of sth.* | 难闻 | 强调强烈的恶臭、令人不适 |<br>| **stink** | *stink (of)* | 难闻 | 口语化、强烈的臭味 |</div>
+                    
+                </div>
+            </div>
+        </div>
+        <div class="card" id="card-7" data-index="7">
+            <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                <div class="card-front">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-type">单词</div>
+                    <div class="card-word">moderate</div>
+                    <div class="card-hint">点击卡片查看答案</div>
+                    <div class="card-count">已提问 1 次</div>
+                </div>
+                <div class="card-back">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-word-small">moderate</div>
+                    <div class="card-meaning">- [形容词]：适度的、中等的、温和的、不过分的<br>&nbsp;&nbsp;- [动词]：缓和、减轻、主持会议、使变温和<br>&nbsp;&nbsp;- [名词]：温和派人士、持温和观点的人</div>
+                    
+            <div class="example">
+                <div class="example-en">She has a moderate income and lives a comfortable life.</div>
+                <div class="example-cn">她有中等收入，生活舒适。</div>
+            </div>
+                </div>
+            </div>
+        </div>
+        <div class="card" id="card-8" data-index="8">
+            <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                <div class="card-front">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-type">语法</div>
+                    <div class="card-word">介词短语作定语和状语</div>
+                    <div class="card-hint">点击卡片查看答案</div>
+                    <div class="card-count">已提问 1 次</div>
+                </div>
+                <div class="card-back">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-word-small">介词短语作定语和状语</div>
+                    <div class="card-meaning">介词短语（介词 + 名词）可以在句子中充当两种重要角色：<br>1. **定语**：修饰名词，放在被修饰名词的后面<br>2. **状语**：修饰动词，放在动词前或后，表示时间、地点、原因等</div>
+                    
+                </div>
+            </div>
+        </div>
+        <div class="card" id="card-9" data-index="9">
+            <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                <div class="card-front">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-type">单词</div>
+                    <div class="card-word">nostalgic</div>
+                    <div class="card-hint">点击卡片查看答案</div>
+                    <div class="card-count">已提问 1 次</div>
+                </div>
+                <div class="card-back">
+                    <div class="card-badge new">🟢 新学</div>
+                    <div class="card-word-small">nostalgic</div>
+                    <div class="card-meaning">- [形容词]：怀旧的、令人怀念的、感到思乡的</div>
+                    
+            <div class="example">
+                <div class="example-en">*I feel nostalgic for my childhood.* vs. *She's sentimental about old photos.*</div>
+                <div class="example-cn">当我回到小学时，我感到怀旧。</div>
+            </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="nav">
+        <button onclick="flipAll(false)">全部翻回正面</button>
+        <button onclick="flipAll(true)">全部显示答案</button>
+        <button onclick="shuffleCards()">随机排列</button>
+    </div>
+    <div class="footer">
+        EN Learning Knowledge Base | Generated at 12:09:29
+    </div>
+    <script>
+        function flipAll(show) {
+            document.querySelectorAll('.card-inner').forEach(el => {
+                if (show) el.classList.add('flipped');
+                else el.classList.remove('flipped');
+            });
+        }
+        function shuffleCards() {
+            const container = document.querySelector('.cards-container');
+            const cards = Array.from(container.children);
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                container.appendChild(cards[j]);
+                cards.splice(j, 1, cards[i]);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "autoupdate": false,
+  "provider": {
+    "myprovider": {
+      "npm": "@ai-sdk/anthropic",
+      "name": "妙AI Code（圈外）",
+      "options": {
+        "baseURL": "https://ai.djicorp.com/ai/new-api/v1",
+        "apiKey": "sk-r6Yf7qUivrwUHKy0hE5hu1NbTSZdw0DlYTaMKmEKlieujJC5"
+      },
+      "models": {
+        "glm-4.7-private": {
+          "name": "glm-4.7-private"
+        },
+        "minimax-m2.1-private": {
+          "name": "minimax-m2.1-private"
+        },
+        "claude-opus-4-6": {
+          "name": "claude-opus-4-6"
+        },
+        "claude-sonnet-4-6": {
+          "name": "claude-sonnet-4-6"
+        },
+        "claude-haiku-4-5": {
+          "name": "claude-haiku-4-5"
+        }
+      }
+    }
+  }
+}
+
