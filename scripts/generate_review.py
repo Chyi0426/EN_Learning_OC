@@ -249,6 +249,15 @@ def generate_html(items):
         .card-hint {{ font-size:12px; color:#888; margin-top:12px; }}
         .card-count {{ font-size:11px; color:#666; margin-top:8px; }}
         .card-word-small {{ font-size:20px; font-weight:bold; margin-bottom:12px; color:#7dd3fc; }}
+        .speak-btn {{
+            background:none; border:1px solid rgba(255,255,255,0.3); color:#7dd3fc;
+            width:36px; height:36px; border-radius:50%; cursor:pointer;
+            font-size:18px; display:inline-flex; align-items:center; justify-content:center;
+            margin-top:8px; transition:background 0.2s, transform 0.15s;
+        }}
+        .speak-btn:hover {{ background:rgba(255,255,255,0.1); }}
+        .speak-btn:active {{ transform:scale(0.9); }}
+        .speak-btn.playing {{ background:rgba(125,211,252,0.2); border-color:#7dd3fc; }}
         .card-meaning {{ font-size:14px; line-height:1.6; color:#ddd; }}
         .example {{ margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); width:100%; }}
         .example-en {{ font-size:13px; color:#7dd3fc; font-style:italic; }}
@@ -473,12 +482,13 @@ def generate_html(items):
                         <div class="card-badge ${{level}}">${{levelEmoji}} ${{levelText}}</div>
                         <div class="card-type">${{typeText}} | ${{i+1}}/${{reviewQueue.length}}</div>
                         <div class="card-word">${{item.word}}</div>
+                        <button class="speak-btn" onclick="speak('${{item.word}}', this, event)" title="英式发音">&#128264;</button>
                         <div class="card-hint">点击卡片查看答案</div>
                         <div class="card-count">${{streakInfo}}</div>
                     </div>
                     <div class="card-back">
                         <div class="card-badge ${{level}}">${{levelEmoji}} ${{levelText}}</div>
-                        <div class="card-word-small">${{item.word}}</div>
+                        <div class="card-word-small">${{item.word}} <button class="speak-btn" onclick="speak('${{item.word}}', this, event)" title="英式发音" style="width:28px;height:28px;font-size:14px;vertical-align:middle">&#128264;</button></div>
                         <div class="card-meaning">${{item.meaning}}</div>
                         ${{exHtml}}
                     </div>
@@ -672,6 +682,33 @@ def generate_html(items):
             localStorage.removeItem(SESSION_KEY);
             location.reload();
         }}
+    }}
+
+    // ========== 英式发音 ==========
+    function speak(word, btn, event) {{
+        event.stopPropagation(); // 阻止卡片翻转
+        if (!window.speechSynthesis) {{ alert('你的浏览器不支持语音功能'); return; }}
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'en-GB'; // 英式发音
+        utterance.rate = 0.85;    // 稍慢一点，听得更清楚
+        utterance.pitch = 1;
+        // 尝试选择英式语音
+        const voices = window.speechSynthesis.getVoices();
+        const britishVoice = voices.find(v => v.lang === 'en-GB')
+            || voices.find(v => v.lang.startsWith('en-GB'))
+            || voices.find(v => v.lang.startsWith('en'));
+        if (britishVoice) utterance.voice = britishVoice;
+        // 按钮动画
+        btn.classList.add('playing');
+        utterance.onend = () => btn.classList.remove('playing');
+        utterance.onerror = () => btn.classList.remove('playing');
+        window.speechSynthesis.speak(utterance);
+    }}
+    // 预加载语音列表（某些浏览器需要异步加载）
+    if (window.speechSynthesis) {{
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }}
 
     // ========== 初始化 ==========

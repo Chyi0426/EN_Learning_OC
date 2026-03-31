@@ -77,6 +77,15 @@
         .card-hint { font-size:12px; color:#888; margin-top:12px; }
         .card-count { font-size:11px; color:#666; margin-top:8px; }
         .card-word-small { font-size:20px; font-weight:bold; margin-bottom:12px; color:#7dd3fc; }
+        .speak-btn {
+            background:none; border:1px solid rgba(255,255,255,0.3); color:#7dd3fc;
+            width:36px; height:36px; border-radius:50%; cursor:pointer;
+            font-size:18px; display:inline-flex; align-items:center; justify-content:center;
+            margin-top:8px; transition:background 0.2s, transform 0.15s;
+        }
+        .speak-btn:hover { background:rgba(255,255,255,0.1); }
+        .speak-btn:active { transform:scale(0.9); }
+        .speak-btn.playing { background:rgba(125,211,252,0.2); border-color:#7dd3fc; }
         .card-meaning { font-size:14px; line-height:1.6; color:#ddd; }
         .example { margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); width:100%; }
         .example-en { font-size:13px; color:#7dd3fc; font-style:italic; }
@@ -209,7 +218,7 @@
     </div>
 
     <script>
-    const ALL_ITEMS = [{"id": "usage_时间和地点介词_(AT___IN___ON)", "word": "时间和地点介词 (AT / IN / ON)", "meaning": "时间和地点介词的选择取决于**范围的大小和具体程度**：<br><br>| 介词 | 时间用法 | 地点用法 | 核心特征 |<br>|------|---------|---------|---------|<br>| **AT** | 具体时刻（精确点） | 具体建筑/地点（点状） | 🎯 精确、点状 |<br>| **IN** | 较长时期（月/季/年） | 地理范围/内部空间 | 📦 范围、内部 |<br>| **ON** | 具体日期/星期 | 表面、街道、方向 | 📄 表面、接触 |", "count": 2, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "usage_despite_vs._in_spite_of", "word": "despite vs. in spite of", "meaning": "despite 和 in spite of 都表示\"尽管\"的意思，但在使用场景和正式程度上有区别：<br><br>| 对比项 | despite | in spite of |<br>|-------|---------|------------|<br>| 正式程度 | 更正式、更学术 | 较口语化、较随意 |<br>| 使用频率 | 高（特别在书面语中） | 中等 |<br>| 语言风格 | 简洁、直接 | 相对冗长 |", "count": 2, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "vocabulary_despite", "word": "despite", "meaning": "- [介词]：尽管、不顾、虽然<br>&nbsp;&nbsp;- [名词]（较少用）：恶意、蔑视", "count": 1, "type": "vocabulary", "example_en": "Despite the challenges, the team succeeded.", "example_cn": "尽管有挑战，团队还是成功了。"}, {"id": "vocabulary_simulate", "word": "simulate", "meaning": "- [动词]：模拟、模仿、假装、装作", "count": 1, "type": "vocabulary", "example_en": "*Simulate a flight.* vs. *Imitate a voice.*", "example_cn": "飞行员在真正的飞行前模拟各种应急场景。"}, {"id": "vocabulary_illuminate", "word": "illuminate", "meaning": "- [动词]：照亮、阐明、装饰（建筑物）<br>&nbsp;&nbsp;- [形容词]：被照亮的、明亮的", "count": 1, "type": "vocabulary", "example_en": "*The candles **illuminate** the room.* (动词 - 蜡烛照亮房间)", "example_cn": "路灯在夜间照亮道路。"}, {"id": "grammar_介词短语作定语和状语", "word": "介词短语作定语和状语", "meaning": "介词短语（介词 + 名词）可以在句子中充当两种重要角色：<br>1. **定语**：修饰名词，放在被修饰名词的后面<br>2. **状语**：修饰动词，放在动词前或后，表示时间、地点、原因等", "count": 1, "type": "grammar", "example_en": "", "example_cn": ""}, {"id": "usage_英文中\"闻\"的表述方法_(smell___sniff___whiff___reek___stink)", "word": "英文中\"闻\"的表述方法 (smell / sniff / whiff / reek / stink)", "meaning": "英文中没有一个单词能完全区分\"香味的闻\"和\"难闻气味的闻\"。而是通过**不同动词和形容词搭配**来表达：<br><br>| 动词 | 用法 | 气味属性 | 用途 |<br>|------|------|--------|------|<br>| **smell** | *smell sth.* 或 *sth. smells + adj.* | 中立 | 最常用，任何气味 |<br>| **sniff** | *sniff sth.* | 中立 | 强调主动、仔细的动作 |<br>| **whiff** | *get/catch a whiff of* | 中立 | 微弱、短暂的气味 |<br>| **reek** | *reek of sth.* | 难闻 | 强调强烈的恶臭、令人不适 |<br>| **stink** | *stink (of)* | 难闻 | 口语化、强烈的臭味 |", "count": 1, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "vocabulary_moderate", "word": "moderate", "meaning": "- [形容词]：适度的、中等的、温和的、不过分的<br>&nbsp;&nbsp;- [动词]：缓和、减轻、主持会议、使变温和<br>&nbsp;&nbsp;- [名词]：温和派人士、持温和观点的人", "count": 1, "type": "vocabulary", "example_en": "She has a moderate income and lives a comfortable life.", "example_cn": "她有中等收入，生活舒适。"}, {"id": "vocabulary_nostalgic", "word": "nostalgic", "meaning": "- [形容词]：怀旧的、令人怀念的、感到思乡的", "count": 1, "type": "vocabulary", "example_en": "*I feel nostalgic for my childhood.* vs. *She's sentimental about old photos.*", "example_cn": "当我回到小学时，我感到怀旧。"}, {"id": "vocabulary_thrilled", "word": "thrilled", "meaning": "- [形容词]：兴高采烈的、高兴极了的、激动的", "count": 1, "type": "vocabulary", "example_en": "*thrilled about the promotion* vs. *excited about the party*", "example_cn": "经过多年努力，我为能获得这个升职机会感到高兴极了。"}];
+    const ALL_ITEMS = [{"id": "usage_时间和地点介词_(AT___IN___ON)", "word": "时间和地点介词 (AT / IN / ON)", "meaning": "时间和地点介词的选择取决于**范围的大小和具体程度**：<br><br>| 介词 | 时间用法 | 地点用法 | 核心特征 |<br>|------|---------|---------|---------|<br>| **AT** | 具体时刻（精确点） | 具体建筑/地点（点状） | 🎯 精确、点状 |<br>| **IN** | 较长时期（月/季/年） | 地理范围/内部空间 | 📦 范围、内部 |<br>| **ON** | 具体日期/星期 | 表面、街道、方向 | 📄 表面、接触 |", "count": 2, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "usage_despite_vs._in_spite_of", "word": "despite vs. in spite of", "meaning": "despite 和 in spite of 都表示\"尽管\"的意思，但在使用场景和正式程度上有区别：<br><br>| 对比项 | despite | in spite of |<br>|-------|---------|------------|<br>| 正式程度 | 更正式、更学术 | 较口语化、较随意 |<br>| 使用频率 | 高（特别在书面语中） | 中等 |<br>| 语言风格 | 简洁、直接 | 相对冗长 |", "count": 2, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "vocabulary_nostalgic", "word": "nostalgic", "meaning": "- [形容词]：怀旧的、令人怀念的、感到思乡的", "count": 1, "type": "vocabulary", "example_en": "*I feel nostalgic for my childhood.* vs. *She's sentimental about old photos.*", "example_cn": "当我回到小学时，我感到怀旧。"}, {"id": "vocabulary_thrilled", "word": "thrilled", "meaning": "- [形容词]：兴高采烈的、高兴极了的、激动的", "count": 1, "type": "vocabulary", "example_en": "*thrilled about the promotion* vs. *excited about the party*", "example_cn": "经过多年努力，我为能获得这个升职机会感到高兴极了。"}, {"id": "vocabulary_illuminate", "word": "illuminate", "meaning": "- [动词]：照亮、阐明、装饰（建筑物）<br>&nbsp;&nbsp;- [形容词]：被照亮的、明亮的", "count": 1, "type": "vocabulary", "example_en": "*The candles **illuminate** the room.* (动词 - 蜡烛照亮房间)", "example_cn": "路灯在夜间照亮道路。"}, {"id": "vocabulary_maven", "word": "maven", "meaning": "- [名词]：专家、大师、权威人士（在某个领域，通常非正式）", "count": 1, "type": "vocabulary", "example_en": "*a tech maven* vs. *a computer expert*", "example_cn": "史蒂夫·乔布斯是一位科技大师，革新了整个产业。"}, {"id": "vocabulary_moderate", "word": "moderate", "meaning": "- [形容词]：适度的、中等的、温和的、不过分的<br>&nbsp;&nbsp;- [动词]：缓和、减轻、主持会议、使变温和<br>&nbsp;&nbsp;- [名词]：温和派人士、持温和观点的人", "count": 1, "type": "vocabulary", "example_en": "She has a moderate income and lives a comfortable life.", "example_cn": "她有中等收入，生活舒适。"}, {"id": "grammar_介词短语作定语和状语", "word": "介词短语作定语和状语", "meaning": "介词短语（介词 + 名词）可以在句子中充当两种重要角色：<br>1. **定语**：修饰名词，放在被修饰名词的后面<br>2. **状语**：修饰动词，放在动词前或后，表示时间、地点、原因等", "count": 1, "type": "grammar", "example_en": "", "example_cn": ""}, {"id": "usage_英文中\"闻\"的表述方法_(smell___sniff___whiff___reek___stink)", "word": "英文中\"闻\"的表述方法 (smell / sniff / whiff / reek / stink)", "meaning": "英文中没有一个单词能完全区分\"香味的闻\"和\"难闻气味的闻\"。而是通过**不同动词和形容词搭配**来表达：<br><br>| 动词 | 用法 | 气味属性 | 用途 |<br>|------|------|--------|------|<br>| **smell** | *smell sth.* 或 *sth. smells + adj.* | 中立 | 最常用，任何气味 |<br>| **sniff** | *sniff sth.* | 中立 | 强调主动、仔细的动作 |<br>| **whiff** | *get/catch a whiff of* | 中立 | 微弱、短暂的气味 |<br>| **reek** | *reek of sth.* | 难闻 | 强调强烈的恶臭、令人不适 |<br>| **stink** | *stink (of)* | 难闻 | 口语化、强烈的臭味 |", "count": 1, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "vocabulary_despite", "word": "despite", "meaning": "- [介词]：尽管、不顾、虽然<br>&nbsp;&nbsp;- [名词]（较少用）：恶意、蔑视", "count": 1, "type": "vocabulary", "example_en": "Despite the challenges, the team succeeded.", "example_cn": "尽管有挑战，团队还是成功了。"}];
     const STORAGE_KEY = 'en_review_data';
     const SESSION_KEY = 'en_review_sessions';
 
@@ -301,12 +310,13 @@
                         <div class="card-badge ${level}">${levelEmoji} ${levelText}</div>
                         <div class="card-type">${typeText} | ${i+1}/${reviewQueue.length}</div>
                         <div class="card-word">${item.word}</div>
+                        <button class="speak-btn" onclick="speak('${item.word}', this, event)" title="英式发音">&#128264;</button>
                         <div class="card-hint">点击卡片查看答案</div>
                         <div class="card-count">${streakInfo}</div>
                     </div>
                     <div class="card-back">
                         <div class="card-badge ${level}">${levelEmoji} ${levelText}</div>
-                        <div class="card-word-small">${item.word}</div>
+                        <div class="card-word-small">${item.word} <button class="speak-btn" onclick="speak('${item.word}', this, event)" title="英式发音" style="width:28px;height:28px;font-size:14px;vertical-align:middle">&#128264;</button></div>
                         <div class="card-meaning">${item.meaning}</div>
                         ${exHtml}
                     </div>
@@ -500,6 +510,33 @@
             localStorage.removeItem(SESSION_KEY);
             location.reload();
         }
+    }
+
+    // ========== 英式发音 ==========
+    function speak(word, btn, event) {
+        event.stopPropagation(); // 阻止卡片翻转
+        if (!window.speechSynthesis) { alert('你的浏览器不支持语音功能'); return; }
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'en-GB'; // 英式发音
+        utterance.rate = 0.85;    // 稍慢一点，听得更清楚
+        utterance.pitch = 1;
+        // 尝试选择英式语音
+        const voices = window.speechSynthesis.getVoices();
+        const britishVoice = voices.find(v => v.lang === 'en-GB')
+            || voices.find(v => v.lang.startsWith('en-GB'))
+            || voices.find(v => v.lang.startsWith('en'));
+        if (britishVoice) utterance.voice = britishVoice;
+        // 按钮动画
+        btn.classList.add('playing');
+        utterance.onend = () => btn.classList.remove('playing');
+        utterance.onerror = () => btn.classList.remove('playing');
+        window.speechSynthesis.speak(utterance);
+    }
+    // 预加载语音列表（某些浏览器需要异步加载）
+    if (window.speechSynthesis) {
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }
 
     // ========== 初始化 ==========
