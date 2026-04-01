@@ -6,8 +6,8 @@
     <string>com.raymond.en-learning-review</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/bin/python3</string>
-        <string>/Users/raymond.zhong/Desktop/EN_Learning_OC/scripts/push_reminders.py</string>
+        <string>/bin/bash</string>
+        <string>/Users/raymond.zhong/Documents/en_review_launcher.sh</string>
     </array>
     <key>StartCalendarInterval</key>
     <dict>
