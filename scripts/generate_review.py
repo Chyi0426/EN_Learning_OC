@@ -802,22 +802,25 @@ def generate_html(items):
     return html
 
 def sync_to_github():
-    """将更新同步到 GitHub Pages"""
+    """将更新同步到 GitHub Pages（带超时，不阻塞主流程）"""
     try:
-        subprocess.run(["git", "add", "-A"], cwd=BASE_DIR, capture_output=True)
+        subprocess.run(["git", "add", "-A"], cwd=BASE_DIR,
+                       capture_output=True, timeout=10)
         today = datetime.now().strftime("%Y-%m-%d %H:%M")
         subprocess.run(
             ["git", "commit", "-m", f"update: daily review {today}"],
-            cwd=BASE_DIR, capture_output=True
+            cwd=BASE_DIR, capture_output=True, timeout=10
         )
         result = subprocess.run(
             ["git", "push"],
-            cwd=BASE_DIR, capture_output=True, text=True
+            cwd=BASE_DIR, capture_output=True, text=True, timeout=30
         )
         if result.returncode == 0:
-            print(f"已同步到 GitHub Pages：{CONFIG.get('github_pages_url', 'https://chyi0426.github.io/EN_Learning_OC/')}")
+            print(f"已同步到 GitHub Pages：{CONFIG.get('github_pages_url', '')}")
         else:
-            print(f"GitHub 同步失败：{result.stderr}")
+            print(f"GitHub 同步失败（可手动运行 git push）：{result.stderr.strip()}")
+    except subprocess.TimeoutExpired:
+        print("GitHub 同步超时（网络较慢），卡片已在本地生成，可稍后手动运行 git push")
     except Exception as e:
         print(f"GitHub 同步出错：{e}")
 
