@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-EN Learning Review Card Generator
+EN Learning Review Card Generator - 重写版
 从学习库读取数据，生成每日复习 HTML 卡片页面
 """
 
@@ -11,848 +11,568 @@ import random
 import subprocess
 from datetime import datetime
 
-# 动态推断 BASE_DIR：脚本在 scripts/ 下，BASE_DIR 就是上一级
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_FILE = os.path.join(BASE_DIR, "daily_review.html")
 DOCS_FILE = os.path.join(BASE_DIR, "docs", "index.html")
 
-# 读取配置文件
 def load_config():
     config_path = os.path.join(BASE_DIR, "config.json")
     if os.path.exists(config_path):
         with open(config_path, "r", encoding="utf-8") as f:
             return json.load(f)
-    return {"github_pages_url": "", "github_repo": ""}
+    return {}
 
 CONFIG = load_config()
 
-def clean_meaning(text):
-    """清理 Markdown 格式，只保留纯净的释义文本"""
-    import re
+def clean_text(text):
+    """清理 Markdown，返回纯净文本"""
     lines = text.split('\n')
-    clean = []
+    result = []
     for line in lines:
         line = line.strip()
-        # 跳过表格行（含 | 的行）
-        if line.startswith('|'):
+        if not line or line.startswith('|') or line.startswith('---'):
             continue
-        # 跳过空行和分隔线
-        if not line or line.startswith('---') or line.startswith('==='):
-            continue
-        # 去掉 Markdown 粗体/斜体
         line = re.sub(r'\*\*(.+?)\*\*', r'\1', line)
         line = re.sub(r'\*(.+?)\*', r'\1', line)
-        # 去掉开头的 - 或 * 列表符号
         line = re.sub(r'^[-*]\s*', '', line)
-        # 去掉 [词性]：前缀，保留后面的释义
         line = re.sub(r'^\[.*?\]：', '', line)
-        # 去掉 emoji
-        line = re.sub(r'[🎯📦📄🔴🟡🟢📍🗺️🛣️⏰📅📆]', '', line)
+        line = re.sub(r'[^\x00-\x7F\u4e00-\u9fff\u3000-\u303f\uff00-\uffef\s\w.,;:!?()/\-\'\"（）。，；：！？、]', '', line)
+        line = line.strip()
         if line:
-            clean.append(line.strip())
-    # 只取前3行，避免太长
-    return ' / '.join(clean[:3])
+            result.append(line)
+    return ' / '.join(result[:2]) if result else ''
 
-def parse_vocabulary(filepath):
-    """解析单词库，提取每个单词条目"""
-    words = []
+def parse_words(filepath):
+    items = []
     if not os.path.exists(filepath):
-        return words
-    with open(filepath, "r", encoding="utf-8") as f:
-        content = f.read()
-    
-    # 按 ### 分割每个单词条目
-    entries = re.split(r'\n---\n', content)
-    for entry in entries:
-        match = re.search(r'### (\w+)', entry)
-        if not match:
+        return items
+    content = open(filepath, encoding='utf-8').read()
+    for entry in re.split(r'\n---\n', content):
+        m = re.search(r'### (.+)', entry)
+        if not m:
             continue
-        word = match.group(1)
-        
-        # 提取中文释义
-        meaning = ""
-        meaning_match = re.search(r'\*\*中文释义\*\*：\s*\n(.*?)(?=\n\n|\*\*)', entry, re.DOTALL)
-        if meaning_match:
-            meaning = clean_meaning(meaning_match.group(1))
-        
-        # 提取提问次数
+        word = m.group(1).strip()
+
+        meaning = ''
+        mm = re.search(r'\*\*中文释义\*\*：\s*\n(.*?)(?=\n\n|\*\*)', entry, re.DOTALL)
+        if mm:
+            meaning = clean_text(mm.group(1))
+        if not meaning:
+            # 备用：找第一个释义行
+            mm2 = re.search(r'\[.*?\]：(.+)', entry)
+            if mm2:
+                meaning = mm2.group(1).strip()
+
         count = 1
-        count_match = re.search(r'\*\*提问次数\*\*：(\d+)', entry)
-        if count_match:
-            count = int(count_match.group(1))
-        
-        # 提取关键差异
-        diff = ""
-        diff_match = re.search(r'\*\*关键差异\*\*\n(.*?)(?=\*\*实际应用场景\*\*)', entry, re.DOTALL)
-        if diff_match:
-            diff = diff_match.group(1).strip()
-        
-        # 提取一个例句
-        example_en = ""
-        example_cn = ""
-        ex_match = re.search(r'EN: (.+)', entry)
-        if ex_match:
-            example_en = ex_match.group(1).strip()
-        cx_match = re.search(r'CN: (.+)', entry)
-        if cx_match:
-            example_cn = cx_match.group(1).strip()
-        
-        words.append({
-            "word": word,
-            "meaning": meaning,
-            "count": count,
-            "diff": diff,
-            "example_en": example_en,
-            "example_cn": example_cn,
-            "type": "vocabulary"
-        })
-    return words
+        cm = re.search(r'\*\*提问次数\*\*：(\d+)', entry)
+        if cm:
+            count = int(cm.group(1))
+
+        ex_en = ''
+        ex_cn = ''
+        em = re.search(r'EN:\s*(.+)', entry)
+        if em:
+            ex_en = em.group(1).strip().lstrip('*').rstrip('*')
+        cm2 = re.search(r'CN:\s*(.+)', entry)
+        if cm2:
+            ex_cn = cm2.group(1).strip()
+
+        if word:
+            items.append({
+                'word': word,
+                'meaning': meaning or '（查看词库了解详情）',
+                'count': count,
+                'type': 'word',
+                'example_en': ex_en,
+                'example_cn': ex_cn,
+            })
+    return items
 
 def parse_usage(filepath):
-    """解析用法库"""
-    usages = []
+    items = []
     if not os.path.exists(filepath):
-        return usages
-    with open(filepath, "r", encoding="utf-8") as f:
-        content = f.read()
-    
-    entries = re.split(r'\n---\n', content)
-    for entry in entries:
-        match = re.search(r'### (.+)', entry)
-        if not match:
+        return items
+    content = open(filepath, encoding='utf-8').read()
+    for entry in re.split(r'\n---\n', content):
+        m = re.search(r'### (.+)', entry)
+        if not m:
             continue
-        title = match.group(1).strip()
-        
-        core = ""
-        core_match = re.search(r'\*\*核心区别\*\*\s*\n(.*?)(?=\*\*详细说明\*\*|\*\*记忆技巧\*\*)', entry, re.DOTALL)
-        if core_match:
-            core = clean_meaning(core_match.group(1))
-        
+        title = m.group(1).strip()
         count = 1
-        count_match = re.search(r'\*\*提问次数\*\*：(\d+)', entry)
-        if count_match:
-            count = int(count_match.group(1))
-        
-        usages.append({
-            "word": title,
-            "meaning": core,
-            "count": count,
-            "type": "usage"
-        })
-    return usages
+        cm = re.search(r'\*\*提问次数\*\*：(\d+)', entry)
+        if cm:
+            count = int(cm.group(1))
+        meaning = '用法辨析 - 查看词库了解详情'
+        mm = re.search(r'\*\*核心区别\*\*\s*\n(.*?)(?=\*\*)', entry, re.DOTALL)
+        if mm:
+            meaning = clean_text(mm.group(1)) or meaning
+        if title:
+            items.append({'word': title, 'meaning': meaning, 'count': count,
+                          'type': 'usage', 'example_en': '', 'example_cn': ''})
+    return items
 
 def parse_grammar(filepath):
-    """解析语法库"""
-    grammars = []
+    items = []
     if not os.path.exists(filepath):
-        return grammars
-    with open(filepath, "r", encoding="utf-8") as f:
-        content = f.read()
-    
-    entries = re.split(r'\n---\n', content)
-    for entry in entries:
-        match = re.search(r'### (.+)', entry)
-        if not match:
+        return items
+    content = open(filepath, encoding='utf-8').read()
+    for entry in re.split(r'\n---\n', content):
+        m = re.search(r'### (.+)', entry)
+        if not m:
             continue
-        title = match.group(1).strip()
-        
-        rule = ""
-        rule_match = re.search(r'\*\*规则说明\*\*\s*\n(.*?)(?=\*\*结构公式\*\*|\*\*例句\*\*)', entry, re.DOTALL)
-        if rule_match:
-            rule = clean_meaning(rule_match.group(1))
-        
+        title = m.group(1).strip()
         count = 1
-        count_match = re.search(r'\*\*提问次数\*\*：(\d+)', entry)
-        if count_match:
-            count = int(count_match.group(1))
-        
-        grammars.append({
-            "word": title,
-            "meaning": rule,
-            "count": count,
-            "type": "grammar"
+        cm = re.search(r'\*\*提问次数\*\*：(\d+)', entry)
+        if cm:
+            count = int(cm.group(1))
+        meaning = '语法规则 - 查看词库了解详情'
+        mm = re.search(r'\*\*规则说明\*\*：(.+)', entry)
+        if mm:
+            meaning = clean_text(mm.group(1)) or meaning
+        if title:
+            items.append({'word': title, 'meaning': meaning, 'count': count,
+                          'type': 'grammar', 'example_en': '', 'example_cn': ''})
+    return items
+
+def select_items(all_items, n=10):
+    weak   = [i for i in all_items if i['count'] >= 3]
+    medium = [i for i in all_items if i['count'] == 2]
+    new    = [i for i in all_items if i['count'] == 1]
+    random.shuffle(new)
+    pool = weak + medium + new
+    return pool[:n]
+
+def make_html(items):
+    today = datetime.now().strftime('%Y-%m-%d')
+
+    # 安全序列化成 JS 数组
+    safe_items = []
+    for item in items:
+        safe_items.append({
+            'id':   item['type'] + '_' + re.sub(r'\W+', '_', item['word']),
+            'word': item['word'],
+            'type': item['type'],
+            'meaning':    item['meaning'],
+            'example_en': item.get('example_en', ''),
+            'example_cn': item.get('example_cn', ''),
+            'count': item['count'],
         })
-    return grammars
 
-def select_review_items(all_items, max_items=10):
-    """
-    选择今日复习项目
-    规则：薄弱项优先（提问次数>=3），然后待巩固（2次），最后新学（1次）
-    """
-    weak = [i for i in all_items if i["count"] >= 3]
-    medium = [i for i in all_items if i["count"] == 2]
-    new = [i for i in all_items if i["count"] == 1]
-    
-    selected = []
-    selected.extend(weak)
-    selected.extend(medium)
-    
-    remaining = max_items - len(selected)
-    if remaining > 0:
-        random.shuffle(new)
-        selected.extend(new[:remaining])
-    
-    return selected[:max_items]
+    data_json = json.dumps(safe_items, ensure_ascii=False)
 
-def generate_html(items):
-    """生成带自测打分和间隔复习的 HTML 页面"""
-    today = datetime.now().strftime("%Y-%m-%d")
-    
-    import json
-    items_json = json.dumps([{
-        "id": f"{item['type']}_{item['word'].replace(' ', '_').replace('/', '_')}",
-        "word": item["word"],
-        "meaning": item["meaning"],
-        "count": item["count"],
-        "type": item["type"],
-        "example_en": item.get("example_en", ""),
-        "example_cn": item.get("example_cn", ""),
-    } for item in items], ensure_ascii=False)
+    label = {'word': '单词', 'usage': '用法', 'grammar': '语法'}
 
-    
-    html = f'''<!DOCTYPE html>
+    return f'''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>每日英文复习 - {today}</title>
-    <style>
-        * {{ margin:0; padding:0; box-sizing:border-box; }}
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            min-height: 100vh; color: #fff; padding: 16px;
-        }}
-        .header {{ text-align:center; padding:20px 0; }}
-        .header h1 {{ font-size:24px; margin-bottom:6px; }}
-        .header .date {{ color:#aaa; font-size:13px; }}
-        .stats {{
-            display:flex; justify-content:center; gap:10px;
-            margin:16px 0; flex-wrap:wrap;
-        }}
-        .stat-item {{
-            background:rgba(255,255,255,0.1); border-radius:10px;
-            padding:10px 16px; text-align:center; min-width:70px;
-        }}
-        .stat-num {{ font-size:22px; font-weight:bold; }}
-        .stat-label {{ font-size:11px; color:#aaa; margin-top:3px; }}
-        .progress-bar {{
-            max-width:500px; margin:0 auto 20px; background:rgba(255,255,255,0.1);
-            border-radius:10px; height:8px; overflow:hidden;
-        }}
-        .progress-fill {{
-            height:100%; border-radius:10px; transition:width 0.5s ease;
-            background: linear-gradient(90deg, #34c759, #30d158);
-        }}
-        .progress-text {{
-            text-align:center; font-size:12px; color:#aaa; margin-bottom:20px;
-        }}
-        .card-wrapper {{
-            max-width:400px; margin:0 auto; position:relative;
-            min-height:350px;
-        }}
-        .card {{
-            width:100%; min-height:300px; perspective:1000px;
-            display:none; flex-direction:column;
-        }}
-        .card.active {{ display:flex; }}
-        .card-inner {{
-            width:100%; min-height:300px; transition:transform 0.6s;
-            transform-style:preserve-3d; position:relative; cursor:pointer;
-        }}
-        .card-inner.flipped {{ transform:rotateY(180deg); }}
-        .card-front, .card-back {{
-            position:absolute; width:100%; min-height:300px;
-            backface-visibility:hidden; border-radius:16px; padding:24px;
-            display:flex; flex-direction:column; justify-content:center; align-items:center;
-        }}
-        .card-front {{
-            background:linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
-            border:1px solid rgba(255,255,255,0.2);
-        }}
-        .card-back {{
-            background:linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08));
-            border:1px solid rgba(255,255,255,0.3);
-            transform:rotateY(180deg); overflow-y:auto;
-            justify-content:flex-start; align-items:flex-start;
-        }}
-        .card-badge {{
-            position:absolute; top:12px; right:12px; font-size:11px;
-            padding:3px 8px; border-radius:20px;
-        }}
-        .card-badge.weak {{ background:rgba(255,59,48,0.3); }}
-        .card-badge.medium {{ background:rgba(255,204,0,0.3); }}
-        .card-badge.new {{ background:rgba(52,199,89,0.3); }}
-        .card-badge.mastered {{ background:rgba(100,100,255,0.3); }}
-        .card-type {{ font-size:12px; color:#aaa; margin-bottom:8px; }}
-        .card-word {{ font-size:30px; font-weight:bold; margin:10px 0; }}
-        .card-hint {{ font-size:12px; color:#888; margin-top:12px; }}
-        .card-count {{ font-size:11px; color:#666; margin-top:8px; }}
-        .card-word-small {{ font-size:20px; font-weight:bold; margin-bottom:12px; color:#7dd3fc; }}
-        .speak-btn {{
-            background:none; border:1px solid rgba(255,255,255,0.3); color:#7dd3fc;
-            width:36px; height:36px; border-radius:50%; cursor:pointer;
-            font-size:18px; display:inline-flex; align-items:center; justify-content:center;
-            margin-top:8px; transition:background 0.2s, transform 0.15s;
-        }}
-        .speak-btn:hover {{ background:rgba(255,255,255,0.1); }}
-        .speak-btn:active {{ transform:scale(0.9); }}
-        .speak-btn.playing {{ background:rgba(125,211,252,0.2); border-color:#7dd3fc; }}
-        .card-meaning {{ font-size:14px; line-height:1.6; color:#ddd; }}
-        .example {{ margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); width:100%; }}
-        .example-en {{ font-size:13px; color:#7dd3fc; font-style:italic; }}
-        .example-cn {{ font-size:12px; color:#aaa; margin-top:4px; }}
-        .rating-buttons {{
-            display:flex; gap:10px; margin-top:20px; width:100%;
-            justify-content:center;
-        }}
-        .rating-btn {{
-            padding:12px 20px; border:none; border-radius:10px;
-            font-size:14px; font-weight:600; cursor:pointer; flex:1;
-            max-width:120px; transition:transform 0.15s, opacity 0.15s;
-        }}
-        .rating-btn:active {{ transform:scale(0.95); }}
-        .rating-btn.forgot {{
-            background:linear-gradient(135deg, #ff3b30, #ff6b6b); color:#fff;
-        }}
-        .rating-btn.fuzzy {{
-            background:linear-gradient(135deg, #ff9500, #ffcc00); color:#333;
-        }}
-        .rating-btn.known {{
-            background:linear-gradient(135deg, #34c759, #30d158); color:#fff;
-        }}
-        .nav {{
-            display:flex; justify-content:center; gap:12px; margin-top:20px;
-        }}
-        .nav button {{
-            background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2);
-            color:#fff; padding:10px 20px; border-radius:8px; cursor:pointer;
-            font-size:13px; transition:background 0.2s;
-        }}
-        .nav button:hover {{ background:rgba(255,255,255,0.25); }}
-        .nav button:disabled {{ opacity:0.3; cursor:not-allowed; }}
-        .summary {{
-            display:none; max-width:400px; margin:0 auto; text-align:center;
-            background:rgba(255,255,255,0.1); border-radius:16px; padding:30px;
-        }}
-        .summary h2 {{ font-size:22px; margin-bottom:16px; }}
-        .summary-stats {{ display:flex; justify-content:center; gap:20px; margin:20px 0; }}
-        .summary-item {{ text-align:center; }}
-        .summary-item .num {{ font-size:28px; font-weight:bold; }}
-        .summary-item .label {{ font-size:12px; color:#aaa; margin-top:4px; }}
-        .history {{ max-width:400px; margin:20px auto; }}
-        .history h3 {{ font-size:16px; margin-bottom:10px; color:#aaa; }}
-        .history-item {{
-            display:flex; justify-content:space-between; align-items:center;
-            padding:8px 12px; border-bottom:1px solid rgba(255,255,255,0.05);
-            font-size:13px;
-        }}
-        .history-dot {{ width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:8px; }}
-        .dot-red {{ background:#ff3b30; }}
-        .dot-yellow {{ background:#ffcc00; }}
-        .dot-green {{ background:#34c759; }}
-        .footer {{ text-align:center; margin-top:40px; color:#666; font-size:12px; }}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>英文复习 {today}</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:#1a1a2e;min-height:100vh;color:#fff;padding:16px}}
+h1{{text-align:center;font-size:22px;margin:20px 0 4px}}
+.sub{{text-align:center;color:#aaa;font-size:13px;margin-bottom:20px}}
+.stats{{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}}
+.stat{{background:rgba(255,255,255,.1);border-radius:10px;padding:10px 18px;text-align:center}}
+.stat .n{{font-size:22px;font-weight:bold}}
+.stat .l{{font-size:11px;color:#aaa;margin-top:2px}}
+.bar-wrap{{max-width:420px;margin:0 auto 6px;height:6px;background:rgba(255,255,255,.1);border-radius:6px;overflow:hidden}}
+.bar{{height:100%;background:linear-gradient(90deg,#34c759,#30d158);border-radius:6px;transition:width .4s}}
+.bar-txt{{text-align:center;font-size:12px;color:#aaa;margin-bottom:20px}}
+/* 卡片 */
+.deck{{max-width:420px;margin:0 auto}}
+.card{{display:none;flex-direction:column;gap:14px}}
+.card.active{{display:flex}}
+.flip-area{{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  border-radius:16px;padding:28px 24px;cursor:pointer;min-height:180px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;transition:background .2s;position:relative;user-select:none}}
+.flip-area:active{{background:rgba(255,255,255,.13)}}
+.badge{{position:absolute;top:12px;right:12px;font-size:11px;padding:2px 8px;border-radius:20px}}
+.badge.weak{{background:rgba(255,59,48,.3)}}
+.badge.medium{{background:rgba(255,204,0,.3)}}
+.badge.new{{background:rgba(52,199,89,.3)}}
+.card-type{{font-size:11px;color:#888;margin-bottom:8px}}
+.card-word{{font-size:32px;font-weight:700;margin-bottom:6px;word-break:break-word}}
+.card-hint{{font-size:12px;color:#666;margin-top:8px}}
+.card-streak{{font-size:11px;color:#555;margin-top:4px}}
+/* 答案面 */
+.answer{{display:none;width:100%}}
+.answer.show{{display:block}}
+.answer-word{{font-size:18px;font-weight:600;color:#7dd3fc;margin-bottom:10px}}
+.answer-meaning{{font-size:15px;line-height:1.7;color:#ddd;margin-bottom:10px}}
+.answer-ex{{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1)}}
+.ex-en{{font-size:13px;color:#7dd3fc;font-style:italic}}
+.ex-cn{{font-size:12px;color:#aaa;margin-top:3px}}
+/* 发音 */
+.speak-btn{{background:none;border:1px solid rgba(125,211,252,.4);color:#7dd3fc;
+  width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px;
+  display:inline-flex;align-items:center;justify-content:center;
+  margin-left:8px;vertical-align:middle;transition:background .2s}}
+.speak-btn:hover{{background:rgba(125,211,252,.15)}}
+/* 打分按钮 */
+.rating{{display:flex;gap:10px;justify-content:center}}
+.btn{{padding:12px 0;border:none;border-radius:10px;font-size:14px;
+  font-weight:600;cursor:pointer;flex:1;transition:opacity .15s;
+  -webkit-tap-highlight-color:transparent}}
+.btn:active{{opacity:.75}}
+.btn.forgot{{background:linear-gradient(135deg,#ff3b30,#ff6b6b);color:#fff}}
+.btn.fuzzy{{background:linear-gradient(135deg,#ff9500,#ffcc00);color:#333}}
+.btn.known{{background:linear-gradient(135deg,#34c759,#30d158);color:#fff}}
+/* 导航 */
+.nav{{display:flex;gap:10px;justify-content:center;margin-top:14px}}
+.nav-btn{{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+  color:#fff;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px}}
+.nav-btn:disabled{{opacity:.3;cursor:default}}
+/* 完成页 */
+.done{{display:none;max-width:420px;margin:0 auto;text-align:center;
+  background:rgba(255,255,255,.08);border-radius:16px;padding:30px 24px}}
+.done h2{{font-size:20px;margin-bottom:16px}}
+.done-stats{{display:flex;gap:16px;justify-content:center;margin:16px 0}}
+.done-item .dn{{font-size:28px;font-weight:700}}
+.done-item .dl{{font-size:12px;color:#aaa;margin-top:3px}}
+.done-list{{margin-top:16px;text-align:left}}
+.done-row{{display:flex;justify-content:space-between;padding:6px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);font-size:13px}}
+.done-actions{{display:flex;gap:10px;margin-top:20px;justify-content:center}}
+.footer{{text-align:center;margin-top:30px;color:#444;font-size:11px}}
+</style>
 </head>
 <body>
-    <div class="header">
-        <h1>Daily English Review</h1>
-        <div class="date">{today}</div>
-    </div>
-    <div class="stats">
-        <div class="stat-item">
-            <div class="stat-num" id="stat-total">0</div>
-            <div class="stat-label">总数</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-num" id="stat-done" style="color:#34c759">0</div>
-            <div class="stat-label">已完成</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-num" id="stat-known" style="color:#34c759">0</div>
-            <div class="stat-label">认识</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-num" id="stat-fuzzy" style="color:#ffcc00">0</div>
-            <div class="stat-label">模糊</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-num" id="stat-forgot" style="color:#ff3b30">0</div>
-            <div class="stat-label">不认识</div>
-        </div>
-    </div>
-    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-    <div class="progress-text" id="progress-text">点击卡片翻转，然后评估你的掌握程度</div>
 
-    <div class="card-wrapper" id="card-wrapper"></div>
+<h1>Daily English Review</h1>
+<div class="sub">{today} · 点击卡片翻转查看答案</div>
 
-    <div class="summary" id="summary">
-        <h2>今日复习完成！</h2>
-        <div class="summary-stats">
-            <div class="summary-item">
-                <div class="num" id="sum-known" style="color:#34c759">0</div>
-                <div class="label">认识</div>
-            </div>
-            <div class="summary-item">
-                <div class="num" id="sum-fuzzy" style="color:#ffcc00">0</div>
-                <div class="label">模糊</div>
-            </div>
-            <div class="summary-item">
-                <div class="num" id="sum-forgot" style="color:#ff3b30">0</div>
-                <div class="label">不认识</div>
-            </div>
-        </div>
-        <div class="progress-text" id="sum-rate"></div>
-        <div class="nav" style="margin-top:20px">
-            <button onclick="restartWeak()">重新复习「不认识+模糊」</button>
-            <button onclick="restartAll()">全部重新复习</button>
-        </div>
-        <div class="history" id="history">
-            <h3>本次详情</h3>
-        </div>
-    </div>
+<div class="stats">
+  <div class="stat"><div class="n" id="sTotal">0</div><div class="l">总数</div></div>
+  <div class="stat"><div class="n" id="sDone" style="color:#34c759">0</div><div class="l">已完成</div></div>
+  <div class="stat"><div class="n" id="sKnown" style="color:#34c759">0</div><div class="l">认识</div></div>
+  <div class="stat"><div class="n" id="sFuzzy" style="color:#ffcc00">0</div><div class="l">模糊</div></div>
+  <div class="stat"><div class="n" id="sForgot" style="color:#ff3b30">0</div><div class="l">不认识</div></div>
+</div>
+<div class="bar-wrap"><div class="bar" id="bar" style="width:0"></div></div>
+<div class="bar-txt" id="barTxt">开始复习吧</div>
 
-    <div class="nav" id="nav-buttons">
-        <button id="btn-prev" onclick="prevCard()" disabled>&larr; 上一个</button>
-        <button id="btn-skip" onclick="skipCard()">跳过 &rarr;</button>
-    </div>
+<div class="deck" id="deck"></div>
 
-    <div class="history" id="past-sessions" style="display:none">
-        <h3>历史复习记录</h3>
-        <div id="past-list"></div>
-    </div>
+<div class="done" id="done">
+  <h2>今日复习完成！</h2>
+  <div class="done-stats">
+    <div class="done-item"><div class="dn" id="dKnown" style="color:#34c759">0</div><div class="dl">认识</div></div>
+    <div class="done-item"><div class="dn" id="dFuzzy" style="color:#ffcc00">0</div><div class="dl">模糊</div></div>
+    <div class="done-item"><div class="dn" id="dForgot" style="color:#ff3b30">0</div><div class="dl">不认识</div></div>
+  </div>
+  <div class="bar-txt" id="dRate"></div>
+  <div class="done-list" id="dList"></div>
+  <div class="done-actions">
+    <button class="nav-btn" onclick="replayWeak()">重练不认识+模糊</button>
+    <button class="nav-btn" onclick="replayAll()">全部重新来</button>
+  </div>
+</div>
 
-    <div class="footer">
-        EN Learning Knowledge Base | {today}<br>
-        <span style="cursor:pointer;text-decoration:underline" onclick="document.getElementById('past-sessions').style.display=document.getElementById('past-sessions').style.display==='none'?'block':'none'">查看历史记录</span>
-        &nbsp;|&nbsp;
-        <span style="cursor:pointer;text-decoration:underline" onclick="clearHistory()">清除本地数据</span>
-    </div>
+<div class="nav" id="nav">
+  <button class="nav-btn" id="btnPrev" onclick="prev()" disabled>← 上一个</button>
+  <button class="nav-btn" id="btnSkip" onclick="skip()">跳过 →</button>
+</div>
 
-    <script>
-    const ALL_ITEMS = {items_json};
-    const STORAGE_KEY = 'en_review_data';
-    const SESSION_KEY = 'en_review_sessions';
+<div class="footer">EN Learning · {today}</div>
 
-    let currentIndex = 0;
-    let results = {{}};
-    let reviewQueue = [];
+<script>
+var ITEMS = {data_json};
+var SK = 'enReview2';
+var cur = 0, queue = [], res = {{}};
 
-    // ========== 本地存储 ==========
-    function getReviewData() {{
-        try {{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {{}}; }}
-        catch(e) {{ return {{}}; }}
+function store() {{
+  try {{ return JSON.parse(localStorage.getItem(SK)) || {{}}; }} catch(e) {{ return {{}}; }}
+}}
+function save(d) {{
+  try {{ localStorage.setItem(SK, JSON.stringify(d)); }} catch(e) {{}}
+}}
+
+function daysSince(iso) {{
+  if (!iso) return 999;
+  return Math.floor((Date.now() - new Date(iso)) / 86400000);
+}}
+
+function needsReview(d) {{
+  if (!d || !d.lastDate) return true;
+  var gaps = [1,2,4,7,14,30,60];
+  if (d.last === 'forgot') return daysSince(d.lastDate) >= 1;
+  if (d.last === 'fuzzy')  return daysSince(d.lastDate) >= 2;
+  var gap = gaps[Math.min(d.streak||0, gaps.length-1)];
+  return daysSince(d.lastDate) >= gap;
+}}
+
+function buildQueue() {{
+  var st = store();
+  var need = [], fresh = [];
+  ITEMS.forEach(function(item) {{
+    var d = st[item.id];
+    if (!d) {{ fresh.push(item); return; }}
+    if (needsReview(d)) {{
+      item._pri = d.last==='forgot'?0:(d.last==='fuzzy'?1:2);
+      need.push(item);
     }}
-    function saveReviewData(data) {{
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }});
+  need.sort(function(a,b){{ return (a._pri||0)-(b._pri||0); }});
+  // 随机打乱 fresh
+  for (var i=fresh.length-1;i>0;i--){{
+    var j=Math.floor(Math.random()*(i+1));
+    var t=fresh[i];fresh[i]=fresh[j];fresh[j]=t;
+  }}
+  queue = need.concat(fresh);
+  if (queue.length === 0) queue = ITEMS.slice();
+}}
+
+function badgeClass(item) {{
+  var d = store()[item.id];
+  if (!d) return 'new';
+  if (d.last==='forgot') return 'weak';
+  if (d.last==='fuzzy') return 'medium';
+  return 'new';
+}}
+
+function badgeLabel(item) {{
+  var d = store()[item.id];
+  if (!d) return '🟢 新学';
+  if (d.last==='forgot') return '🔴 不认识';
+  if (d.last==='fuzzy') return '🟡 模糊';
+  if ((d.streak||0)>=3) return '🔵 已掌握';
+  return '🟢 复习中';
+}}
+
+function streakText(item) {{
+  var d = store()[item.id];
+  if (!d) return '首次复习';
+  return '连续认识 '+(d.streak||0)+' 次';
+}}
+
+function renderDeck() {{
+  var deck = document.getElementById('deck');
+  deck.innerHTML = '';
+  queue.forEach(function(item, i) {{
+    var typeLabel = {{'word':'单词','usage':'用法','grammar':'语法'}}[item.type]||item.type;
+    var exHtml = '';
+    if (item.example_en) {{
+      exHtml = '<div class="answer-ex"><div class="ex-en">'+esc(item.example_en)+'</div>'
+             + (item.example_cn?'<div class="ex-cn">'+esc(item.example_cn)+'</div>':'')
+             + '</div>';
     }}
-            }} catch(e) {{}}
-        }}
-        const dot = document.getElementById('sync-dot');
-        const txt = document.getElementById('sync-txt');
-        if (dot && txt) {{
-            dot.style.color = serverAvailable ? '#34c759' : '#888';
-            txt.textContent = serverAvailable
-                ? `已连接同步服务器 (${{SYNC_SERVER}})`
-                : '离线模式（仅本地）';
-        }}
-    }}
+    var div = document.createElement('div');
+    div.className = 'card' + (i===0?' active':'');
+    div.dataset.i = i;
+    div.innerHTML =
+      '<div class="flip-area" onclick="flip(this)">'
+      + '<span class="badge '+badgeClass(item)+'">'+badgeLabel(item)+'</span>'
+      + '<div class="card-type">'+typeLabel+' · '+(i+1)+'/'+queue.length+'</div>'
+      + '<div class="card-word">'+esc(item.word)+'</div>'
+      + '<div class="answer" id="ans'+i+'">'
+      + '<div class="answer-word">'+esc(item.word)
+      + '<button class="speak-btn" onclick="speak(event,\''+esc(item.word)+'\')">&#128264;</button>'
+      + '</div>'
+      + '<div class="answer-meaning">'+esc(item.meaning)+'</div>'
+      + exHtml
+      + '</div>'
+      + '<div class="card-hint" id="hint'+i+'">点击查看答案</div>'
+      + '<div class="card-streak">'+streakText(item)+'</div>'
+      + '</div>'
+      + '<div class="rating" id="rating'+i+'" style="display:none">'
+      + '<button class="btn forgot" onclick="rate('+i+',\'forgot\')">不认识</button>'
+      + '<button class="btn fuzzy"  onclick="rate('+i+',\'fuzzy\')">模糊</button>'
+      + '<button class="btn known"  onclick="rate('+i+',\'known\')">认识</button>'
+      + '</div>';
+    deck.appendChild(div);
+  }});
+  updateStats();
+}}
 
-    async function loadFromServer() {{
-        if (!serverAvailable) return null;
-        try {{
-            const r = await fetch(SYNC_SERVER + '/progress', {{signal: AbortSignal.timeout(2000)}});
-            if (r.ok) return await r.json();
-        }} catch(e) {{}}
-        return null;
-    }}
+function flip(el) {{
+  var i = el.closest('.card').dataset.i;
+  var ans = document.getElementById('ans'+i);
+  var hint = document.getElementById('hint'+i);
+  var rating = document.getElementById('rating'+i);
+  if (ans.classList.contains('show')) return;
+  ans.classList.add('show');
+  hint.style.display = 'none';
+  rating.style.display = 'flex';
+}}
 
-    async function saveToServer(data) {{
-        if (!serverAvailable) return;
-        try {{
-            await fetch(SYNC_SERVER + '/progress', {{
-                method: 'POST',
-                headers: {{'Content-Type': 'application/json'}},
-                body: JSON.stringify(data),
-                signal: AbortSignal.timeout(3000)
-            }});
-        }} catch(e) {{}}
-    }}
+function rate(i, r) {{
+  var item = queue[i];
+  var st = store();
+  if (!st[item.id]) st[item.id] = {{streak:0}};
+  st[item.id].last = r;
+  st[item.id].lastDate = new Date().toISOString();
+  if (r==='known') st[item.id].streak = (st[item.id].streak||0)+1;
+  else             st[item.id].streak = 0;
+  save(st);
+  res[item.id] = r;
+  updateStats();
+  setTimeout(function(){{ goNext(); }}, 350);
+}}
 
-    // ========== 间隔复习算法 ==========
-    function getReviewData() {{
-        try {{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {{}}; }}
-        catch(e) {{ return {{}}; }}
-    }}
-    function saveReviewData(data) {{
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        // 同时异步推送到服务器
-        saveToServer(data);
-    }}
+function goNext() {{
+  var cards = document.querySelectorAll('.card');
+  if (cur < cards.length-1) {{
+    cards[cur].classList.remove('active');
+    cur++;
+    cards[cur].classList.add('active');
+    document.getElementById('btnPrev').disabled = cur===0;
+  }} else {{
+    showDone();
+  }}
+}}
 
-    function shouldReviewToday(itemData) {{
-        if (!itemData || !itemData.lastReview) return true;
-        const now = new Date();
-        const last = new Date(itemData.lastReview);
-        const daysSince = Math.floor((now - last) / 86400000);
-        // 间隔复习间距：不认识=1天, 模糊=2天, 认识=按次数递增(1,2,4,7,14,30)
-        const intervals = [1, 2, 4, 7, 14, 30, 60];
-        if (itemData.lastRating === 'forgot') return daysSince >= 1;
-        if (itemData.lastRating === 'fuzzy') return daysSince >= 2;
-        // known: 根据连续答对次数决定间隔
-        const streak = itemData.streak || 0;
-        const interval = intervals[Math.min(streak, intervals.length - 1)];
-        return daysSince >= interval;
-    }}
+function prev() {{
+  var cards = document.querySelectorAll('.card');
+  if (cur > 0) {{
+    cards[cur].classList.remove('active');
+    cur--;
+    cards[cur].classList.add('active');
+    document.getElementById('btnPrev').disabled = cur===0;
+  }}
+}}
 
-    function buildReviewQueue() {{
-        const data = getReviewData();
-        let needReview = [];
-        let noRecord = [];
+function skip() {{ goNext(); }}
 
-        ALL_ITEMS.forEach(item => {{
-            const d = data[item.id];
-            if (!d) {{
-                noRecord.push(item);
-            }} else if (shouldReviewToday(d)) {{
-                item._priority = d.lastRating === 'forgot' ? 0 : (d.lastRating === 'fuzzy' ? 1 : 2);
-                needReview.push(item);
-            }}
-        }});
+function updateStats() {{
+  var total = queue.length;
+  var done  = Object.keys(res).length;
+  var known  = Object.values(res).filter(function(v){{return v==='known';}}).length;
+  var fuzzy  = Object.values(res).filter(function(v){{return v==='fuzzy';}}).length;
+  var forgot = Object.values(res).filter(function(v){{return v==='forgot';}}).length;
+  document.getElementById('sTotal').textContent  = total;
+  document.getElementById('sDone').textContent   = done;
+  document.getElementById('sKnown').textContent  = known;
+  document.getElementById('sFuzzy').textContent  = fuzzy;
+  document.getElementById('sForgot').textContent = forgot;
+  var pct = total>0 ? Math.round(done/total*100) : 0;
+  document.getElementById('bar').style.width = pct+'%';
+  document.getElementById('barTxt').textContent = done===0
+    ? '开始复习吧'
+    : ('已完成 '+done+'/'+total+'，正确率 '+Math.round(known/Math.max(done,1)*100)+'%');
+}}
 
-        // 排序：不认识 > 模糊 > 认识
-        needReview.sort((a, b) => (a._priority || 0) - (b._priority || 0));
-        // 没有记录的放后面
-        reviewQueue = [...needReview, ...noRecord];
-        
-        if (reviewQueue.length === 0) {{
-            reviewQueue = [...ALL_ITEMS]; // 全部已掌握就全部复习
-        }}
-    }}
+function showDone() {{
+  document.getElementById('deck').style.display = 'none';
+  document.getElementById('nav').style.display  = 'none';
+  var done = document.getElementById('done');
+  done.style.display = 'block';
+  var known  = Object.values(res).filter(function(v){{return v==='known';}}).length;
+  var fuzzy  = Object.values(res).filter(function(v){{return v==='fuzzy';}}).length;
+  var forgot = Object.values(res).filter(function(v){{return v==='forgot';}}).length;
+  var total  = known+fuzzy+forgot;
+  document.getElementById('dKnown').textContent  = known;
+  document.getElementById('dFuzzy').textContent  = fuzzy;
+  document.getElementById('dForgot').textContent = forgot;
+  document.getElementById('dRate').textContent   =
+    '正确率 '+Math.round(known/Math.max(total,1)*100)+'%';
+  var html = '';
+  queue.forEach(function(item) {{
+    var r = res[item.id];
+    if (!r) return;
+    var dot = r==='known'?'🟢':(r==='fuzzy'?'🟡':'🔴');
+    var label = r==='known'?'认识':(r==='fuzzy'?'模糊':'不认识');
+    html += '<div class="done-row"><span>'+dot+' '+esc(item.word)+'</span><span>'+label+'</span></div>';
+  }});
+  document.getElementById('dList').innerHTML = html;
+}}
 
-    // ========== 卡片渲染 ==========
-    function renderCards() {{
-        const wrapper = document.getElementById('card-wrapper');
-        wrapper.innerHTML = '';
-        const data = getReviewData();
+function replayWeak() {{
+  var weak = queue.filter(function(item){{
+    return res[item.id]==='forgot'||res[item.id]==='fuzzy';
+  }});
+  if (weak.length===0){{ alert('全部认识了！'); return; }}
+  queue = weak; cur = 0; res = {{}};
+  document.getElementById('done').style.display = 'none';
+  document.getElementById('deck').style.display = '';
+  document.getElementById('nav').style.display  = '';
+  renderDeck();
+}}
 
-        reviewQueue.forEach((item, i) => {{
-            const d = data[item.id];
-            let level, levelText, levelEmoji;
-            if (d && d.lastRating === 'forgot') {{
-                level='weak'; levelText='不认识'; levelEmoji='🔴';
-            }} else if (d && d.lastRating === 'fuzzy') {{
-                level='medium'; levelText='模糊'; levelEmoji='🟡';
-            }} else if (d && d.streak >= 3) {{
-                level='mastered'; levelText='已掌握'; levelEmoji='🔵';
-            }} else {{
-                level='new'; levelText='待复习'; levelEmoji='🟢';
-            }}
-            const typeText = {{'vocabulary':'单词','usage':'用法','grammar':'语法'}}[item.type]||'其他';
-            const exHtml = item.example_en ? `
-                <div class="example">
-                    <div class="example-en">${{item.example_en}}</div>
-                    <div class="example-cn">${{item.example_cn}}</div>
-                </div>` : '';
-            const streakInfo = d ? `连续认识 ${{d.streak||0}} 次` : '首次复习';
+function replayAll() {{
+  queue = ITEMS.slice(); cur = 0; res = {{}};
+  document.getElementById('done').style.display = 'none';
+  document.getElementById('deck').style.display = '';
+  document.getElementById('nav').style.display  = '';
+  renderDeck();
+}}
 
-            const card = document.createElement('div');
-            card.className = 'card' + (i === 0 ? ' active' : '');
-            card.dataset.index = i;
-            card.innerHTML = `
-                <div class="card-inner" onclick="this.classList.toggle('flipped')">
-                    <div class="card-front">
-                        <div class="card-badge ${{level}}">${{levelEmoji}} ${{levelText}}</div>
-                        <div class="card-type">${{typeText}} | ${{i+1}}/${{reviewQueue.length}}</div>
-                        <div class="card-word">${{item.word}}</div>
-                        <button class="speak-btn" onclick="speak('${{item.word}}', this, event)" title="英式发音">&#128264;</button>
-                        <div class="card-hint">点击卡片查看答案</div>
-                        <div class="card-count">${{streakInfo}}</div>
-                    </div>
-                    <div class="card-back">
-                        <div class="card-badge ${{level}}">${{levelEmoji}} ${{levelText}}</div>
-                        <div class="card-word-small">${{item.word}} <button class="speak-btn" onclick="speak('${{item.word}}', this, event)" title="英式发音" style="width:28px;height:28px;font-size:14px;vertical-align:middle">&#128264;</button></div>
-                        <div class="card-meaning">${{item.meaning}}</div>
-                        ${{exHtml}}
-                    </div>
-                </div>
-                <div class="rating-buttons">
-                    <button class="rating-btn forgot" onclick="rate('${{item.id}}', 'forgot', event)">不认识</button>
-                    <button class="rating-btn fuzzy" onclick="rate('${{item.id}}', 'fuzzy', event)">模糊</button>
-                    <button class="rating-btn known" onclick="rate('${{item.id}}', 'known', event)">认识</button>
-                </div>`;
-            wrapper.appendChild(card);
-        }});
-        updateStats();
-    }}
+function speak(e, word) {{
+  e.stopPropagation();
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  var u = new SpeechSynthesisUtterance(word);
+  u.lang = 'en-GB';
+  u.rate = 0.85;
+  var voices = window.speechSynthesis.getVoices();
+  var v = voices.find(function(x){{return x.lang==='en-GB';}})
+       || voices.find(function(x){{return x.lang.startsWith('en');}});
+  if (v) u.voice = v;
+  window.speechSynthesis.speak(u);
+}}
 
-    // ========== 打分逻辑 ==========
-    function rate(id, rating, event) {{
-        event.stopPropagation();
-        results[id] = rating;
+function esc(s) {{
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}}
 
-        // 更新 localStorage 中的间隔复习数据
-        const data = getReviewData();
-        if (!data[id]) data[id] = {{ streak: 0, totalReviews: 0, history: [] }};
-        data[id].lastReview = new Date().toISOString();
-        data[id].lastRating = rating;
-        data[id].totalReviews = (data[id].totalReviews || 0) + 1;
-        if (rating === 'known') {{
-            data[id].streak = (data[id].streak || 0) + 1;
-        }} else {{
-            data[id].streak = 0;
-        }}
-        // 保存最近5次记录
-        if (!data[id].history) data[id].history = [];
-        data[id].history.push({{ date: new Date().toISOString().slice(0,10), rating }});
-        if (data[id].history.length > 10) data[id].history = data[id].history.slice(-10);
-        saveReviewData(data);
+// 预加载语音
+if (window.speechSynthesis) {{
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = function(){{ window.speechSynthesis.getVoices(); }};
+}}
 
-        updateStats();
-        // 自动跳转下一张
-        setTimeout(() => nextCard(), 400);
-    }}
-
-    // ========== 导航 ==========
-    function nextCard() {{
-        const cards = document.querySelectorAll('.card');
-        if (currentIndex < cards.length - 1) {{
-            cards[currentIndex].classList.remove('active');
-            currentIndex++;
-            cards[currentIndex].classList.add('active');
-            // 重置翻转状态
-            cards[currentIndex].querySelector('.card-inner').classList.remove('flipped');
-            updateNav();
-            updateStats();
-        }} else {{
-            showSummary();
-        }}
-    }}
-    function prevCard() {{
-        const cards = document.querySelectorAll('.card');
-        if (currentIndex > 0) {{
-            cards[currentIndex].classList.remove('active');
-            currentIndex--;
-            cards[currentIndex].classList.add('active');
-            updateNav();
-        }}
-    }}
-    function skipCard() {{ nextCard(); }}
-
-    function updateNav() {{
-        document.getElementById('btn-prev').disabled = currentIndex === 0;
-    }}
-
-    // ========== 统计更新 ==========
-    function updateStats() {{
-        const total = reviewQueue.length;
-        const done = Object.keys(results).length;
-        const known = Object.values(results).filter(r=>r==='known').length;
-        const fuzzy = Object.values(results).filter(r=>r==='fuzzy').length;
-        const forgot = Object.values(results).filter(r=>r==='forgot').length;
-
-        document.getElementById('stat-total').textContent = total;
-        document.getElementById('stat-done').textContent = done;
-        document.getElementById('stat-known').textContent = known;
-        document.getElementById('stat-fuzzy').textContent = fuzzy;
-        document.getElementById('stat-forgot').textContent = forgot;
-
-        const pct = total > 0 ? Math.round(done / total * 100) : 0;
-        document.getElementById('progress-fill').style.width = pct + '%';
-        document.getElementById('progress-text').textContent =
-            done === 0 ? '点击卡片翻转，然后评估你的掌握程度'
-            : `已完成 ${{done}}/${{total}}（正确率 ${{total > 0 ? Math.round(known/Math.max(done,1)*100) : 0}}%）`;
-    }}
-
-    // ========== 完成总结 ==========
-    function showSummary() {{
-        document.getElementById('card-wrapper').style.display = 'none';
-        document.getElementById('nav-buttons').style.display = 'none';
-        const summary = document.getElementById('summary');
-        summary.style.display = 'block';
-
-        const known = Object.values(results).filter(r=>r==='known').length;
-        const fuzzy = Object.values(results).filter(r=>r==='fuzzy').length;
-        const forgot = Object.values(results).filter(r=>r==='forgot').length;
-        const total = known + fuzzy + forgot;
-
-        document.getElementById('sum-known').textContent = known;
-        document.getElementById('sum-fuzzy').textContent = fuzzy;
-        document.getElementById('sum-forgot').textContent = forgot;
-        document.getElementById('sum-rate').textContent =
-            `正确率 ${{Math.round(known/Math.max(total,1)*100)}}% | 模糊的词会在2天后再次出现，不认识的词明天就会再次出现`;
-
-        // 详情列表
-        const history = document.getElementById('history');
-        let listHtml = '';
-        reviewQueue.forEach(item => {{
-            const r = results[item.id];
-            if (!r) return;
-            const dotClass = r==='known'?'dot-green':(r==='fuzzy'?'dot-yellow':'dot-red');
-            const ratingText = r==='known'?'认识':(r==='fuzzy'?'模糊':'不认识');
-            listHtml += `<div class="history-item">
-                <span><span class="history-dot ${{dotClass}}"></span>${{item.word}}</span>
-                <span>${{ratingText}}</span>
-            </div>`;
-        }});
-        history.innerHTML = '<h3>本次详情</h3>' + listHtml;
-
-        // 保存本次 session
-        saveSession(known, fuzzy, forgot);
-    }}
-
-    function saveSession(known, fuzzy, forgot) {{
-        try {{
-            const sessions = JSON.parse(localStorage.getItem(SESSION_KEY)) || [];
-            sessions.push({{
-                date: new Date().toISOString(),
-                total: known + fuzzy + forgot,
-                known, fuzzy, forgot,
-                rate: Math.round(known / Math.max(known+fuzzy+forgot, 1) * 100)
-            }});
-            if (sessions.length > 30) sessions.splice(0, sessions.length - 30);
-            localStorage.setItem(SESSION_KEY, JSON.stringify(sessions));
-            renderPastSessions();
-        }} catch(e) {{}}
-    }}
-
-    function renderPastSessions() {{
-        try {{
-            const sessions = JSON.parse(localStorage.getItem(SESSION_KEY)) || [];
-            const list = document.getElementById('past-list');
-            if (sessions.length === 0) {{ list.innerHTML = '<div style="color:#666;font-size:12px">暂无记录</div>'; return; }}
-            list.innerHTML = sessions.slice().reverse().map(s => `
-                <div class="history-item">
-                    <span>${{new Date(s.date).toLocaleString('zh-CN',{{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}})}}</span>
-                    <span style="color:#34c759">${{s.known}}</span> /
-                    <span style="color:#ffcc00">${{s.fuzzy}}</span> /
-                    <span style="color:#ff3b30">${{s.forgot}}</span>
-                    <span style="color:#aaa">${{s.rate}}%</span>
-                </div>
-            `).join('');
-        }} catch(e) {{}}
-    }}
-
-    // ========== 重新复习 ==========
-    function restartWeak() {{
-        const weakItems = reviewQueue.filter(item => {{
-            const r = results[item.id];
-            return r === 'forgot' || r === 'fuzzy';
-        }});
-        if (weakItems.length === 0) {{ alert('没有需要重新复习的词！全部认识了！'); return; }}
-        reviewQueue = weakItems;
-        currentIndex = 0;
-        results = {{}};
-        document.getElementById('summary').style.display = 'none';
-        document.getElementById('card-wrapper').style.display = '';
-        document.getElementById('nav-buttons').style.display = '';
-        renderCards();
-    }}
-
-    function restartAll() {{
-        reviewQueue = [...ALL_ITEMS];
-        currentIndex = 0;
-        results = {{}};
-        document.getElementById('summary').style.display = 'none';
-        document.getElementById('card-wrapper').style.display = '';
-        document.getElementById('nav-buttons').style.display = '';
-        renderCards();
-    }}
-
-    function clearHistory() {{
-        if (confirm('确定要清除所有本地学习数据吗？这将重置所有间隔复习进度。')) {{
-            localStorage.removeItem(STORAGE_KEY);
-            localStorage.removeItem(SESSION_KEY);
-            location.reload();
-        }}
-    }}
-
-    // ========== 英式发音 ==========
-    function speak(word, btn, event) {{
-        event.stopPropagation(); // 阻止卡片翻转
-        if (!window.speechSynthesis) {{ alert('你的浏览器不支持语音功能'); return; }}
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(word);
-        utterance.lang = 'en-GB'; // 英式发音
-        utterance.rate = 0.85;    // 稍慢一点，听得更清楚
-        utterance.pitch = 1;
-        // 尝试选择英式语音
-        const voices = window.speechSynthesis.getVoices();
-        const britishVoice = voices.find(v => v.lang === 'en-GB')
-            || voices.find(v => v.lang.startsWith('en-GB'))
-            || voices.find(v => v.lang.startsWith('en'));
-        if (britishVoice) utterance.voice = britishVoice;
-        // 按钮动画
-        btn.classList.add('playing');
-        utterance.onend = () => btn.classList.remove('playing');
-        utterance.onerror = () => btn.classList.remove('playing');
-        window.speechSynthesis.speak(utterance);
-    }}
-    // 预加载语音列表（某些浏览器需要异步加载）
-    if (window.speechSynthesis) {{
-        window.speechSynthesis.getVoices();
-        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-    }}
-
-    // ========== 初始化 ==========
-    buildReviewQueue();
-    renderCards();
-    renderPastSessions();
-    </script>
+buildQueue();
+renderDeck();
+</script>
 </body>
 </html>'''
-    return html
 
 def sync_to_github():
-    """将更新同步到 GitHub Pages（带超时，不阻塞主流程）"""
     try:
-        subprocess.run(["git", "add", "-A"], cwd=BASE_DIR,
-                       capture_output=True, timeout=10)
+        subprocess.run(["git", "add", "-A"], cwd=BASE_DIR, capture_output=True, timeout=10)
         today = datetime.now().strftime("%Y-%m-%d %H:%M")
-        subprocess.run(
-            ["git", "commit", "-m", f"update: daily review {today}"],
-            cwd=BASE_DIR, capture_output=True, timeout=10
-        )
-        result = subprocess.run(
-            ["git", "push"],
-            cwd=BASE_DIR, capture_output=True, text=True, timeout=30
-        )
+        subprocess.run(["git", "commit", "-m", f"update: review {today}"],
+                       cwd=BASE_DIR, capture_output=True, timeout=10)
+        result = subprocess.run(["git", "push"], cwd=BASE_DIR,
+                                capture_output=True, text=True, timeout=30)
         if result.returncode == 0:
-            print(f"已同步到 GitHub Pages：{CONFIG.get('github_pages_url', '')}")
+            print("已同步到 GitHub Pages：" + CONFIG.get('github_pages_url', ''))
         else:
-            print(f"GitHub 同步失败（可手动运行 git push）：{result.stderr.strip()}")
+            print("GitHub 同步失败，可稍后手动运行 git push")
     except subprocess.TimeoutExpired:
-        print("GitHub 同步超时（网络较慢），卡片已在本地生成，可稍后手动运行 git push")
+        print("GitHub 同步超时，卡片已在本地生成，可稍后手动运行 git push")
     except Exception as e:
-        print(f"GitHub 同步出错：{e}")
+        print(f"同步出错：{e}")
 
 def main():
-    vocab = parse_vocabulary(os.path.join(BASE_DIR, "vocabulary", "words.md"))
-    usage = parse_usage(os.path.join(BASE_DIR, "usage", "usage.md"))
+    words   = parse_words(os.path.join(BASE_DIR, "vocabulary", "words.md"))
+    usages  = parse_usage(os.path.join(BASE_DIR, "usage", "usage.md"))
     grammar = parse_grammar(os.path.join(BASE_DIR, "grammar", "grammar.md"))
-    
-    all_items = vocab + usage + grammar
-    
+
+    all_items = words + usages + grammar
     if not all_items:
-        print("学习库中还没有任何记录，无法生成复习卡片。")
+        print("学习库为空")
         return
-    
-    selected = select_review_items(all_items)
-    html = generate_html(selected)
-    
-    # 写入本地文件
+
+    selected = select_items(all_items)
+    html = make_html(selected)
+
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    
-    # 同时写入 docs/ 目录供 GitHub Pages 使用
     os.makedirs(os.path.dirname(DOCS_FILE), exist_ok=True)
     with open(DOCS_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    
-    print(f"已生成每日复习卡片：{OUTPUT_FILE}")
-    print(f"共 {len(selected)} 个知识点（薄弱项 {len([i for i in selected if i['count']>=3])} | 待巩固 {len([i for i in selected if i['count']==2])} | 新学 {len([i for i in selected if i['count']==1])}）")
-    
-    # 自动同步到 GitHub Pages
+
+    print(f"已生成复习卡片：{OUTPUT_FILE}")
+    print(f"共 {len(selected)} 个知识点")
     sync_to_github()
 
 if __name__ == "__main__":
