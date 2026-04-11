@@ -26,6 +26,33 @@ def load_config():
 
 CONFIG = load_config()
 
+def clean_meaning(text):
+    """清理 Markdown 格式，只保留纯净的释义文本"""
+    import re
+    lines = text.split('\n')
+    clean = []
+    for line in lines:
+        line = line.strip()
+        # 跳过表格行（含 | 的行）
+        if line.startswith('|'):
+            continue
+        # 跳过空行和分隔线
+        if not line or line.startswith('---') or line.startswith('==='):
+            continue
+        # 去掉 Markdown 粗体/斜体
+        line = re.sub(r'\*\*(.+?)\*\*', r'\1', line)
+        line = re.sub(r'\*(.+?)\*', r'\1', line)
+        # 去掉开头的 - 或 * 列表符号
+        line = re.sub(r'^[-*]\s*', '', line)
+        # 去掉 [词性]：前缀，保留后面的释义
+        line = re.sub(r'^\[.*?\]：', '', line)
+        # 去掉 emoji
+        line = re.sub(r'[🎯📦📄🔴🟡🟢📍🗺️🛣️⏰📅📆]', '', line)
+        if line:
+            clean.append(line.strip())
+    # 只取前3行，避免太长
+    return ' / '.join(clean[:3])
+
 def parse_vocabulary(filepath):
     """解析单词库，提取每个单词条目"""
     words = []
@@ -46,7 +73,7 @@ def parse_vocabulary(filepath):
         meaning = ""
         meaning_match = re.search(r'\*\*中文释义\*\*：\s*\n(.*?)(?=\n\n|\*\*)', entry, re.DOTALL)
         if meaning_match:
-            meaning = meaning_match.group(1).strip()
+            meaning = clean_meaning(meaning_match.group(1))
         
         # 提取提问次数
         count = 1
@@ -99,7 +126,7 @@ def parse_usage(filepath):
         core = ""
         core_match = re.search(r'\*\*核心区别\*\*\s*\n(.*?)(?=\*\*详细说明\*\*|\*\*记忆技巧\*\*)', entry, re.DOTALL)
         if core_match:
-            core = core_match.group(1).strip()
+            core = clean_meaning(core_match.group(1))
         
         count = 1
         count_match = re.search(r'\*\*提问次数\*\*：(\d+)', entry)
@@ -132,7 +159,7 @@ def parse_grammar(filepath):
         rule = ""
         rule_match = re.search(r'\*\*规则说明\*\*\s*\n(.*?)(?=\*\*结构公式\*\*|\*\*例句\*\*)', entry, re.DOTALL)
         if rule_match:
-            rule = rule_match.group(1).strip()
+            rule = clean_meaning(rule_match.group(1))
         
         count = 1
         count_match = re.search(r'\*\*提问次数\*\*：(\d+)', entry)
@@ -175,7 +202,7 @@ def generate_html(items):
     items_json = json.dumps([{
         "id": f"{item['type']}_{item['word'].replace(' ', '_').replace('/', '_')}",
         "word": item["word"],
-        "meaning": item["meaning"].replace("\n", "<br>").replace("  ", "&nbsp;&nbsp;"),
+        "meaning": item["meaning"],
         "count": item["count"],
         "type": item["type"],
         "example_en": item.get("example_en", ""),
