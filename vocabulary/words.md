@@ -2137,3 +2137,64 @@
 
 - **首次记录**：2026-03-31
 - **提问次数**：1
+
+---
+
+### punk
+
+**词性和含义**
+
+- **词性**：名词、形容词
+- **音标**：/pʌŋk/
+- **中文释义**：
+  - [名词]：朋克（音乐/亚文化风格）；小混混；废物
+  - [形容词]：朋克风格的；劣质的；差劲的
+
+**关键差异**
+
+- **punk vs. rebel**：
+  - punk = 特指朋克亚文化风格的反叛（音乐、穿着、态度）
+  - rebel = 更广泛的反叛者，不限于特定文化
+  - EN: *a punk band* vs. *a political rebel*
+
+- **punk vs. hooligan**：
+  - punk = 小混混（口语轻蔑），或朋克文化
+  - hooligan = 流氓、暴徒，强调暴力行为
+  - EN: *street punks* vs. *football hooligans*
+
+- **形容词用法**：形容行为或事物差劲、劣质
+  - EN: *That's a punk move.* （那个举动很差劲）
+
+**实际应用场景**
+
+- **场景1：音乐类型**
+  - EN: She's been into punk music since she was a teenager.
+  - CN: 她从青少年时期就开始喜欢朋克音乐了。
+
+- **场景2：亚文化风格**
+  - EN: He showed up in full punk style—leather jacket, mohawk, and chains.
+  - CN: 他以完整的朋克风格出现——皮夹克、莫西干发型和链条。
+
+- **场景3：口语贬义（小混混）**
+  - EN: Those punks on the street were causing trouble again.
+  - CN: 那些街头小混混又在惹麻烦了。
+
+- **场景4：形容差劲行为**
+  - EN: Quitting without notice is a punk thing to do.
+  - CN: 不打招呼就辞职是很差劲的行为。
+
+- **场景5：延伸词汇**
+  - EN: Steampunk and cyberpunk are genres inspired by punk aesthetics.
+  - CN: 蒸汽朋克和赛博朋克是受朋克美学启发的流派。
+
+- **场景6：流行文化**
+  - EN: The film explores punk culture in 1970s London.
+  - CN: 这部电影探讨了1970年代伦敦的朋克文化。
+
+- **助记/补充**：
+  - 衍生词：punk rock（朋克摇滚）、steampunk（蒸汽朋克）、cyberpunk（赛博朋克）
+  - 代表乐队：Sex Pistols、The Clash、Ramones
+  - 口语中称人为 punk 带轻蔑意味，正式场合避免
+
+- **首次记录**：2026-04-11
+- **提问次数**：1
