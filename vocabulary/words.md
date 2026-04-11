@@ -2198,3 +2198,60 @@
 
 - **首次记录**：2026-04-11
 - **提问次数**：1
+
+---
+
+### furniture
+
+**词性和含义**
+
+- **词性**：名词（不可数名词）
+- **音标**：/ˈfɜːrnɪtʃər/
+- **中文释义**：
+  - [名词]：家具（统称，无复数形式）
+
+**关键差异**
+
+- **最重要：furniture 是不可数名词**
+  - ❌ a furniture / furnitures / two furnitures
+  - ✅ a piece of furniture / much furniture / two pieces of furniture
+
+- **furniture vs. furnishings vs. fittings**：
+  - furniture = 可移动的家具（桌椅床柜）
+  - furnishings = 家居装饰（窗帘、地毯、灯）
+  - fittings = 固定装置（水管、插座、内嵌架）
+
+**实际应用场景**
+
+- **场景1：购买家具**
+  - EN: We need to buy some furniture for the new apartment.
+  - CN: 我们需要为新公寓买一些家具。
+
+- **场景2：描述数量**
+  - EN: The only piece of furniture in the room was an old wooden chair.
+  - CN: 房间里唯一的一件家具是一把旧木椅。
+
+- **场景3：搬家**
+  - EN: Moving all this furniture to the new place took the whole day.
+  - CN: 把这些家具全部搬到新地方花了一整天。
+
+- **场景4：风格描述**
+  - EN: She prefers minimalist furniture with clean lines.
+  - CN: 她偏爱线条简洁的极简主义家具。
+
+- **场景5：办公场合**
+  - EN: The office furniture was replaced with more ergonomic designs.
+  - CN: 办公室家具换成了更符合人体工学的设计。
+
+- **场景6：品牌/质量**
+  - EN: IKEA sells affordable flat-pack furniture that you assemble yourself.
+  - CN: 宜家出售价格实惠的平板包装家具，需要自己组装。
+
+- **助记/补充**：
+  - 词根：来自法语 fourniture（供应物）
+  - 常见搭配：a piece of furniture、office furniture、flat-pack furniture、antique furniture
+  - 同类不可数名词：luggage、equipment、information（都没有复数）
+  - 衍生词：furnish（动词，为…配置家具）、furnished apartment（带家具的公寓）
+
+- **首次记录**：2026-04-11
+- **提问次数**：1
