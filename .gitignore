@@ -1,5 +1,9 @@
-# EN Learning OC
+# 本地配置（每台电脑不同，不同步到 GitHub）
+.local_config
 
-个人英文学习资料库。
+# 日志文件
+scripts/review.log
+scripts/review_error.log
 
-- 在线复习卡片：https://chyi0426.github.io/EN_Learning_OC/
+# macOS 系统文件
+.DS_Store

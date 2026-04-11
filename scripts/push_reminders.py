@@ -8,10 +8,12 @@ EN Learning Reminder Pusher
 import subprocess
 import re
 import os
+import json
 from datetime import datetime, timedelta
 
-BASE_DIR = "/Users/raymond.zhong/Desktop/EN_Learning_OC"
-REMINDER_LIST = "EN复习"  # 提醒事项中的列表名称
+# 动态推断 BASE_DIR
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REMINDER_LIST = "EN复习"
 
 def parse_all_items():
     """从学习库中解析所有知识点"""

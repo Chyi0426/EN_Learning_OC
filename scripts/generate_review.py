@@ -6,13 +6,25 @@ EN Learning Review Card Generator
 
 import re
 import os
+import json
 import random
 import subprocess
 from datetime import datetime
 
-BASE_DIR = "/Users/raymond.zhong/Desktop/EN_Learning_OC"
+# 动态推断 BASE_DIR：脚本在 scripts/ 下，BASE_DIR 就是上一级
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_FILE = os.path.join(BASE_DIR, "daily_review.html")
 DOCS_FILE = os.path.join(BASE_DIR, "docs", "index.html")
+
+# 读取配置文件
+def load_config():
+    config_path = os.path.join(BASE_DIR, "config.json")
+    if os.path.exists(config_path):
+        with open(config_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"github_pages_url": "", "github_repo": ""}
+
+CONFIG = load_config()
 
 def parse_vocabulary(filepath):
     """解析单词库，提取每个单词条目"""
@@ -734,7 +746,7 @@ def sync_to_github():
             cwd=BASE_DIR, capture_output=True, text=True
         )
         if result.returncode == 0:
-            print("已同步到 GitHub Pages：https://chyi0426.github.io/EN_Learning_OC/")
+            print(f"已同步到 GitHub Pages：{CONFIG.get('github_pages_url', 'https://chyi0426.github.io/EN_Learning_OC/')}")
         else:
             print(f"GitHub 同步失败：{result.stderr}")
     except Exception as e:
