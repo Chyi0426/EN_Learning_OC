@@ -6,20 +6,13 @@
 #   1. 把整个 EN_Learning_OC 文件夹复制到新电脑桌面
 #   2. 打开终端，运行：
 #      bash ~/Desktop/EN_Learning_OC/setup.sh
-#
-# 支持自定义安装路径：
-#   bash setup.sh /你想放的位置/EN_Learning_OC
 # ================================================
 
 set -e
 
-# ── 确定安装目录 ───────────────────────────────
-# 优先用用户传入的参数，否则用脚本自身所在目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_DIR="${1:-$SCRIPT_DIR}"
-
 SKILL_DIR="$HOME/.claude/skills/en-learning"
-GH_BIN="$HOME/.local/bin/gh"
 LAUNCHER="$HOME/Documents/en_review_launcher.sh"
 PLIST_DEST="$HOME/Library/LaunchAgents/com.raymond.en-learning-review.plist"
 
@@ -38,7 +31,7 @@ for f in "vocabulary/words.md" "grammar/grammar.md" "usage/usage.md" \
     [ ! -f "$INSTALL_DIR/$f" ] && MISSING="$MISSING\n   缺少：$f"
 done
 if [ -n "$MISSING" ]; then
-    echo "   ❌ 文件夹不完整，请确认复制了完整的 EN_Learning_OC 文件夹："
+    echo "   ❌ 文件夹不完整："
     echo -e "$MISSING"
     exit 1
 fi
@@ -54,7 +47,7 @@ cat > "$INSTALL_DIR/config.json" << EOF
   "github_repo": "Chyi0426/EN_Learning_OC"
 }
 EOF
-echo "   ✅ config.json 已生成（路径：$INSTALL_DIR）"
+echo "   ✅ config.json 已生成"
 
 # ── 3. 安装 Skill ──────────────────────────────
 echo ""
@@ -64,71 +57,61 @@ rm -rf "$SKILL_DIR"
 cp -r "$INSTALL_DIR/en-learning" "$SKILL_DIR"
 echo "   ✅ Skill 已安装：$SKILL_DIR"
 
-# ── 4. 安装 GitHub CLI + 登录 ──────────────────
+# ── 4. 配置 GitHub 同步（只用 git，不需要 gh CLI）──
 echo ""
-echo "🔧 [4/5] 配置 GitHub（用于多设备同步）..."
+echo "🔐 [4/5] 配置 GitHub 同步..."
 
-# 安装 gh CLI
-if [ -f "$GH_BIN" ] && "$GH_BIN" --version > /dev/null 2>&1; then
-    echo "   GitHub CLI 已安装：$("$GH_BIN" --version | head -1)"
-else
-    echo "   正在下载 GitHub CLI..."
-    ARCH=$(uname -m)
-    [ "$ARCH" = "arm64" ] && GH_ARCH="arm64" || GH_ARCH="amd64"
-    GH_URL=$(curl -sL "https://api.github.com/repos/cli/cli/releases/latest" | \
-        python3 -c "import sys,json; d=json.load(sys.stdin); \
-        [print(a['browser_download_url']) for a in d['assets'] \
-        if 'macOS' in a['name'] and '$GH_ARCH' in a['name'] and a['name'].endswith('.zip')]" 2>/dev/null | head -1)
-    if [ -n "$GH_URL" ]; then
-        curl -sL "$GH_URL" -o /tmp/gh_install.zip
-        unzip -o /tmp/gh_install.zip -d /tmp/gh_extracted > /dev/null 2>&1
-        mkdir -p "$HOME/.local/bin"
-        find /tmp/gh_extracted -name "gh" -type f -exec cp {} "$GH_BIN" \;
-        chmod +x "$GH_BIN"
-        rm -rf /tmp/gh_install.zip /tmp/gh_extracted
-        echo "   ✅ GitHub CLI 安装完成"
-    else
-        echo "   ⚠️  GitHub CLI 下载失败，跳过（同步功能将不可用）"
-        GH_BIN=""
-    fi
-fi
-
-# 登录 GitHub
-if [ -n "$GH_BIN" ] && [ -f "$GH_BIN" ]; then
-    if "$GH_BIN" auth status > /dev/null 2>&1; then
-        echo "   已登录 GitHub：$("$GH_BIN" auth status 2>&1 | grep 'Logged in' | head -1)"
-    else
-        echo ""
-        echo "   需要登录 GitHub 才能同步数据到云端。"
-        echo "   请按以下步骤获取 Token："
-        echo "   1. 浏览器打开：https://github.com/settings/tokens"
-        echo "   2. 点击 Generate new token (classic)"
-        echo "   3. 勾选权限：repo 和 read:org"
-        echo "   4. 点击 Generate token，复制生成的 token"
-        echo ""
-        read -p "   粘贴你的 GitHub Token (ghp_...): " GH_TOKEN
-        if [ -n "$GH_TOKEN" ]; then
-            echo "$GH_TOKEN" | "$GH_BIN" auth login --with-token
-            "$GH_BIN" auth setup-git
-            echo "   ✅ GitHub 登录成功"
-        else
-            echo "   ⚠️  未输入 Token，跳过（同步功能将不可用）"
-        fi
-    fi
-    # 配置 git 使用 gh 认证
-    "$GH_BIN" auth setup-git 2>/dev/null || true
-fi
-
-# 初始化 git（如果还不是 git 仓库）
+# 初始化或关联 git 仓库
 if [ ! -d "$INSTALL_DIR/.git" ]; then
-    echo ""
-    echo "   初始化 git 仓库并关联远程..."
     git -C "$INSTALL_DIR" init
     git -C "$INSTALL_DIR" remote add origin "https://github.com/Chyi0426/EN_Learning_OC.git"
-    git -C "$INSTALL_DIR" fetch origin main 2>/dev/null || true
     git -C "$INSTALL_DIR" branch -M main 2>/dev/null || true
-    git -C "$INSTALL_DIR" branch --set-upstream-to=origin/main main 2>/dev/null || true
-    echo "   ✅ git 已关联远程仓库"
+else
+    # 确保 remote 正确
+    git -C "$INSTALL_DIR" remote set-url origin "https://github.com/Chyi0426/EN_Learning_OC.git" 2>/dev/null || \
+    git -C "$INSTALL_DIR" remote add origin "https://github.com/Chyi0426/EN_Learning_OC.git" 2>/dev/null || true
+fi
+
+# 配置 git 用户信息
+git config --global user.name "raymond.zhong" 2>/dev/null || true
+git config --global user.email "raymond.zhong@dji.com" 2>/dev/null || true
+
+echo "   需要 GitHub Token 才能同步数据到云端。"
+echo ""
+echo "   获取方法："
+echo "   1. 浏览器打开：https://github.com/settings/tokens"
+echo "   2. 点击 Generate new token (classic)"
+echo "   3. 勾选权限：repo"
+echo "   4. 点击 Generate token，复制 token"
+echo ""
+read -p "   粘贴你的 GitHub Token (ghp_...，直接回车跳过): " GH_TOKEN
+
+if [ -n "$GH_TOKEN" ]; then
+    # 把 token 存入 macOS 钥匙串，git 以后自动使用
+    git -C "$INSTALL_DIR" config credential.helper osxkeychain 2>/dev/null || true
+    # 用 token 测试推送是否能通
+    REMOTE_URL="https://Chyi0426:${GH_TOKEN}@github.com/Chyi0426/EN_Learning_OC.git"
+    git -C "$INSTALL_DIR" remote set-url origin "$REMOTE_URL"
+    # 写入钥匙串（静默）
+    python3 - << PYEOF
+import subprocess, sys
+url = "https://github.com"
+token = "$GH_TOKEN"
+cmd = f"protocol=https\nhost=github.com\nusername=Chyi0426\npassword={token}\n"
+try:
+    proc = subprocess.run(
+        ["git", "credential-osxkeychain", "store"],
+        input=cmd, capture_output=True, text=True
+    )
+except Exception:
+    pass
+PYEOF
+    # 恢复 remote URL 为不含 token 的版本（token 已存钥匙串）
+    git -C "$INSTALL_DIR" remote set-url origin "https://github.com/Chyi0426/EN_Learning_OC.git"
+    echo "   ✅ GitHub Token 已保存，后续自动同步无需重新输入"
+else
+    echo "   ⚠️  已跳过，学习记录不会自动同步到云端"
+    echo "      （可以稍后在终端运行：cd $INSTALL_DIR && git push）"
 fi
 
 # ── 5. 安装每日定时任务 ────────────────────────
@@ -172,13 +155,13 @@ PLIST
 
 launchctl unload "$PLIST_DEST" 2>/dev/null || true
 launchctl load "$PLIST_DEST"
-echo "   ✅ 定时任务已安装（每天 09:00 自动更新）"
+echo "   ✅ 定时任务已安装"
 
 # ── 生成今日复习卡片 ───────────────────────────
 echo ""
 echo "📚 生成今日复习卡片..."
 python3 "$INSTALL_DIR/scripts/generate_review.py" && \
-    open "$INSTALL_DIR/daily_review.html" || \
+    open "$INSTALL_DIR/daily_review.html" 2>/dev/null || \
     echo "   ⚠️  生成失败，可稍后手动运行"
 
 # ── 完成 ───────────────────────────────────────
@@ -187,10 +170,10 @@ echo "======================================"
 echo "  ✅ 安装完成！"
 echo "======================================"
 echo ""
-echo "  📁 资料库位置：$INSTALL_DIR"
-echo "  🧠 Skill 位置：$SKILL_DIR"
-echo "  🌐 在线复习：  https://chyi0426.github.io/EN_Learning_OC/"
-echo "  ⏰ 定时任务：  每天 09:00 自动更新"
+echo "  📁 资料库：$INSTALL_DIR"
+echo "  🧠 Skill：  $SKILL_DIR"
+echo "  🌐 在线：   https://chyi0426.github.io/EN_Learning_OC/"
+echo "  ⏰ 定时：   每天 09:00 自动更新"
 echo ""
 echo "  打开 OpenCode，直接问英文问题就可以开始了！"
 echo ""
