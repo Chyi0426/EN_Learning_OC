@@ -142,8 +142,11 @@ if __name__ == "__main__":
     print(f"EN Learning 同步服务器启动中...")
     git_pull()
 
-    server = HTTPServer(("localhost", PORT), Handler)
-    print(f"✅ 服务器运行在 http://localhost:{PORT}")
+    # 监听 0.0.0.0，局域网内所有设备都能访问
+    server = HTTPServer(("0.0.0.0", PORT), Handler)
+    print(f"✅ 服务器运行在 http://0.0.0.0:{PORT}")
+    print(f"   本机访问：http://localhost:{PORT}")
+    print(f"   局域网访问：http://192.168.100.12:{PORT}")
     print(f"   打分记录文件：{PROGRESS_FILE}")
     print(f"   按 Ctrl+C 停止")
     print()
