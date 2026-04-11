@@ -14,8 +14,8 @@
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>/Users/raymond.zhong/Desktop/EN_Learning_OC/scripts/sync_server.log</string>
+    <string>/Users/raymond.zhong/Documents/en_sync_server.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/raymond.zhong/Desktop/EN_Learning_OC/scripts/sync_server_error.log</string>
+    <string>/Users/raymond.zhong/Documents/en_sync_server.log</string>
 </dict>
 </plist>
