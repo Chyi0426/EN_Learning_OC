@@ -52,15 +52,15 @@ EN_Learning_OC/
 
 **第三步：更新提问日志** — 追加到 `query_log.md`。
 
-**第四步：自动同步到 GitHub（必须执行）**
+**第四步：更新复习卡片并同步到 GitHub（必须执行）**
 
-每次写入任何学习资料后，必须运行：
+每次写入任何学习资料后，必须运行以下命令（这会同时更新卡片 + 推送到 GitHub Pages）：
 
 ```bash
-cd <BASE_DIR> && git add -A && git commit -m "learn: <简短描述>" && git push
+python3 <BASE_DIR>/scripts/generate_review.py
 ```
 
-这一步是让多台电脑保持同步的关键，**不可省略**。如果 push 失败，告知用户并说明原因。
+**不要用** `git add && git commit && git push`，因为那只推词库文件，不会更新在线复习卡片。必须用 `generate_review.py`，它内部已经包含了 git push 的逻辑，且会同时更新 `docs/index.html`（即 GitHub Pages 上的卡片页面）。
 
 ### 2. 各文档的记录格式
 

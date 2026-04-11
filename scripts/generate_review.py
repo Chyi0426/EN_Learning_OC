@@ -330,6 +330,10 @@ def generate_html(items):
     <div class="header">
         <h1>Daily English Review</h1>
         <div class="date">{today}</div>
+        <div style="font-size:12px;margin-top:6px">
+            <span id="sync-dot" style="color:#888">●</span>
+            <span id="sync-txt" style="color:#888;margin-left:4px">检查同步状态...</span>
+        </div>
     </div>
     <div class="stats">
         <div class="stat-item">
@@ -405,10 +409,49 @@ def generate_html(items):
     const ALL_ITEMS = {items_json};
     const STORAGE_KEY = 'en_review_data';
     const SESSION_KEY = 'en_review_sessions';
+    const SYNC_SERVER = 'http://localhost:7755';
 
     let currentIndex = 0;
     let results = {{}};
     let reviewQueue = [];
+    let serverAvailable = false;
+
+    // ========== 服务器同步 ==========
+    async function checkServer() {{
+        try {{
+            const r = await fetch(SYNC_SERVER + '/ping', {{signal: AbortSignal.timeout(800)}});
+            serverAvailable = r.ok;
+        }} catch(e) {{
+            serverAvailable = false;
+        }}
+        const dot = document.getElementById('sync-dot');
+        const txt = document.getElementById('sync-txt');
+        if (dot && txt) {{
+            dot.style.color = serverAvailable ? '#34c759' : '#888';
+            txt.textContent = serverAvailable ? '已连接同步服务器' : '离线模式（仅本地）';
+        }}
+    }}
+
+    async function loadFromServer() {{
+        if (!serverAvailable) return null;
+        try {{
+            const r = await fetch(SYNC_SERVER + '/progress', {{signal: AbortSignal.timeout(2000)}});
+            if (r.ok) return await r.json();
+        }} catch(e) {{}}
+        return null;
+    }}
+
+    async function saveToServer(data) {{
+        if (!serverAvailable) return;
+        try {{
+            await fetch(SYNC_SERVER + '/progress', {{
+                method: 'POST',
+                headers: {{'Content-Type': 'application/json'}},
+                body: JSON.stringify(data),
+                signal: AbortSignal.timeout(3000)
+            }});
+        }} catch(e) {{}}
+    }}
 
     // ========== 间隔复习算法 ==========
     function getReviewData() {{
@@ -417,6 +460,8 @@ def generate_html(items):
     }}
     function saveReviewData(data) {{
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        // 同时异步推送到服务器
+        saveToServer(data);
     }}
 
     function shouldReviewToday(itemData) {{
@@ -724,9 +769,25 @@ def generate_html(items):
     }}
 
     // ========== 初始化 ==========
-    buildReviewQueue();
-    renderCards();
-    renderPastSessions();
+    (async () => {{
+        // 1. 检查服务器是否在线
+        await checkServer();
+        // 2. 如果服务器在线，拉取最新打分记录并合并到 localStorage
+        if (serverAvailable) {{
+            const serverData = await loadFromServer();
+            if (serverData && Object.keys(serverData).length > 0) {{
+                const local = getReviewData();
+                // 合并：以服务器为准（服务器数据更新）
+                const merged = Object.assign({{}}, local, serverData);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+                console.log(`从服务器同步了 ${{Object.keys(serverData).length}} 条打分记录`);
+            }}
+        }}
+        // 3. 构建复习队列并渲染
+        buildReviewQueue();
+        renderCards();
+        renderPastSessions();
+    }})();
     </script>
 </body>
 </html>'''

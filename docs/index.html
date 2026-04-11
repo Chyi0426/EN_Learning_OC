@@ -146,6 +146,10 @@
     <div class="header">
         <h1>Daily English Review</h1>
         <div class="date">2026-04-12</div>
+        <div style="font-size:12px;margin-top:6px">
+            <span id="sync-dot" style="color:#888">●</span>
+            <span id="sync-txt" style="color:#888;margin-left:4px">检查同步状态...</span>
+        </div>
     </div>
     <div class="stats">
         <div class="stat-item">
@@ -218,13 +222,52 @@
     </div>
 
     <script>
-    const ALL_ITEMS = [{"id": "usage_时间和地点介词_(AT___IN___ON)", "word": "时间和地点介词 (AT / IN / ON)", "meaning": "时间和地点介词的选择取决于**范围的大小和具体程度**：<br><br>| 介词 | 时间用法 | 地点用法 | 核心特征 |<br>|------|---------|---------|---------|<br>| **AT** | 具体时刻（精确点） | 具体建筑/地点（点状） | 🎯 精确、点状 |<br>| **IN** | 较长时期（月/季/年） | 地理范围/内部空间 | 📦 范围、内部 |<br>| **ON** | 具体日期/星期 | 表面、街道、方向 | 📄 表面、接触 |", "count": 2, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "usage_despite_vs._in_spite_of", "word": "despite vs. in spite of", "meaning": "despite 和 in spite of 都表示\"尽管\"的意思，但在使用场景和正式程度上有区别：<br><br>| 对比项 | despite | in spite of |<br>|-------|---------|------------|<br>| 正式程度 | 更正式、更学术 | 较口语化、较随意 |<br>| 使用频率 | 高（特别在书面语中） | 中等 |<br>| 语言风格 | 简洁、直接 | 相对冗长 |", "count": 2, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "vocabulary_craft", "word": "craft", "meaning": "- n. 工艺；手艺；飞行器<br>&nbsp;&nbsp;- v. 精心制作", "count": 1, "type": "vocabulary", "example_en": "She spent hours crafting a beautiful letter.", "example_cn": "她花了几个小时精心制作了一封漂亮的信。"}, {"id": "vocabulary_illuminate", "word": "illuminate", "meaning": "- [动词]：照亮、阐明、装饰（建筑物）<br>&nbsp;&nbsp;- [形容词]：被照亮的、明亮的", "count": 1, "type": "vocabulary", "example_en": "*The candles **illuminate** the room.* (动词 - 蜡烛照亮房间)", "example_cn": "路灯在夜间照亮道路。"}, {"id": "vocabulary_thrill", "word": "thrill", "meaning": "- n. 兴奋；激动；震颤感<br>&nbsp;&nbsp;- v. 使非常兴奋；使非常激动", "count": 1, "type": "vocabulary", "example_en": "The roller coaster gave me a real thrill.", "example_cn": "过山车给了我一种真正的兴奋感。"}, {"id": "vocabulary_implication", "word": "implication", "meaning": "- n. 含意；可能的影响；暗示；牵连", "count": 1, "type": "vocabulary", "example_en": "The implications of this decision are enormous.", "example_cn": "这个决定的影响是巨大的。"}, {"id": "vocabulary_bootstrapped", "word": "bootstrapped", "meaning": "- adj. 自力更生的；自举的", "count": 1, "type": "vocabulary", "example_en": "The company was bootstrapped with only $5,000.", "example_cn": "这家公司仅用5000美元自力更生创办。"}, {"id": "vocabulary_starvation", "word": "starvation", "meaning": "- n. 饥饿；饿死；挨饿", "count": 1, "type": "vocabulary", "example_en": "Millions of people face starvation in the region.", "example_cn": "该地区数百万人面临饥饿。"}, {"id": "vocabulary_maven", "word": "maven", "meaning": "- [名词]：专家、大师、权威人士（在某个领域，通常非正式）", "count": 1, "type": "vocabulary", "example_en": "*a tech maven* vs. *a computer expert*", "example_cn": "史蒂夫·乔布斯是一位科技大师，革新了整个产业。"}, {"id": "vocabulary_hype", "word": "hype", "meaning": "- n. 大肆宣传；炒作<br>&nbsp;&nbsp;- v. 夸张地宣传", "count": 1, "type": "vocabulary", "example_en": "Don't believe the hype—the product isn't that great.", "example_cn": "别相信那些炒作——产品没有那么好。"}];
+    const ALL_ITEMS = [{"id": "usage_时间和地点介词_(AT___IN___ON)", "word": "时间和地点介词 (AT / IN / ON)", "meaning": "时间和地点介词的选择取决于**范围的大小和具体程度**：<br><br>| 介词 | 时间用法 | 地点用法 | 核心特征 |<br>|------|---------|---------|---------|<br>| **AT** | 具体时刻（精确点） | 具体建筑/地点（点状） | 🎯 精确、点状 |<br>| **IN** | 较长时期（月/季/年） | 地理范围/内部空间 | 📦 范围、内部 |<br>| **ON** | 具体日期/星期 | 表面、街道、方向 | 📄 表面、接触 |", "count": 2, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "usage_despite_vs._in_spite_of", "word": "despite vs. in spite of", "meaning": "despite 和 in spite of 都表示\"尽管\"的意思，但在使用场景和正式程度上有区别：<br><br>| 对比项 | despite | in spite of |<br>|-------|---------|------------|<br>| 正式程度 | 更正式、更学术 | 较口语化、较随意 |<br>| 使用频率 | 高（特别在书面语中） | 中等 |<br>| 语言风格 | 简洁、直接 | 相对冗长 |", "count": 2, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "vocabulary_stalemate", "word": "stalemate", "meaning": "- n. 僵局；相持<br>&nbsp;&nbsp;- v. 使陷入僵局", "count": 1, "type": "vocabulary", "example_en": "The negotiations ended in a stalemate.", "example_cn": "谈判以僵局告终。"}, {"id": "vocabulary_continent", "word": "continent", "meaning": "- n. 大陆；洲", "count": 1, "type": "vocabulary", "example_en": "Africa is the second largest continent.", "example_cn": "非洲是第二大大陆。"}, {"id": "vocabulary_segment", "word": "segment", "meaning": "- n. 段；部分；片<br>&nbsp;&nbsp;- v. 分割；划分", "count": 1, "type": "vocabulary", "example_en": "The company targets a specific market segment.", "example_cn": "公司针对一个特定的市场细分。"}, {"id": "vocabulary_dynamic", "word": "dynamic", "meaning": "- adj. 充满活力的；不断变化的<br>&nbsp;&nbsp;- n. 动力；动力学", "count": 1, "type": "vocabulary", "example_en": "The city has a dynamic and exciting atmosphere.", "example_cn": "这座城市有一种充满活力和令人兴奋的氛围。"}, {"id": "grammar_省略疑问句（Elliptical_Questions）", "word": "省略疑问句（Elliptical Questions）", "meaning": "", "count": 1, "type": "grammar", "example_en": "", "example_cn": ""}, {"id": "vocabulary_anonymity", "word": "anonymity", "meaning": "- n. 匿名；匿名性", "count": 1, "type": "vocabulary", "example_en": "The internet provides a sense of anonymity.", "example_cn": "互联网提供了一种匿名感。"}, {"id": "vocabulary_rig", "word": "rig", "meaning": "- n. 钻机；装备<br>&nbsp;&nbsp;- v. 操纵；装配", "count": 1, "type": "vocabulary", "example_en": "The election was rigged by corrupt officials.", "example_cn": "选举被腐败官员操纵了。"}, {"id": "vocabulary_cripple", "word": "cripple", "meaning": "- v. 使残废；严重毁坏<br>&nbsp;&nbsp;- n. 残疾人", "count": 1, "type": "vocabulary", "example_en": "The sanctions could cripple the country's economy.", "example_cn": "制裁可能严重损害这个国家的经济。"}];
     const STORAGE_KEY = 'en_review_data';
     const SESSION_KEY = 'en_review_sessions';
+    const SYNC_SERVER = 'http://localhost:7755';
 
     let currentIndex = 0;
     let results = {};
     let reviewQueue = [];
+    let serverAvailable = false;
+
+    // ========== 服务器同步 ==========
+    async function checkServer() {
+        try {
+            const r = await fetch(SYNC_SERVER + '/ping', {signal: AbortSignal.timeout(800)});
+            serverAvailable = r.ok;
+        } catch(e) {
+            serverAvailable = false;
+        }
+        const dot = document.getElementById('sync-dot');
+        const txt = document.getElementById('sync-txt');
+        if (dot && txt) {
+            dot.style.color = serverAvailable ? '#34c759' : '#888';
+            txt.textContent = serverAvailable ? '已连接同步服务器' : '离线模式（仅本地）';
+        }
+    }
+
+    async function loadFromServer() {
+        if (!serverAvailable) return null;
+        try {
+            const r = await fetch(SYNC_SERVER + '/progress', {signal: AbortSignal.timeout(2000)});
+            if (r.ok) return await r.json();
+        } catch(e) {}
+        return null;
+    }
+
+    async function saveToServer(data) {
+        if (!serverAvailable) return;
+        try {
+            await fetch(SYNC_SERVER + '/progress', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data),
+                signal: AbortSignal.timeout(3000)
+            });
+        } catch(e) {}
+    }
 
     // ========== 间隔复习算法 ==========
     function getReviewData() {
@@ -233,6 +276,8 @@
     }
     function saveReviewData(data) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        // 同时异步推送到服务器
+        saveToServer(data);
     }
 
     function shouldReviewToday(itemData) {
@@ -540,9 +585,25 @@
     }
 
     // ========== 初始化 ==========
-    buildReviewQueue();
-    renderCards();
-    renderPastSessions();
+    (async () => {
+        // 1. 检查服务器是否在线
+        await checkServer();
+        // 2. 如果服务器在线，拉取最新打分记录并合并到 localStorage
+        if (serverAvailable) {
+            const serverData = await loadFromServer();
+            if (serverData && Object.keys(serverData).length > 0) {
+                const local = getReviewData();
+                // 合并：以服务器为准（服务器数据更新）
+                const merged = Object.assign({}, local, serverData);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+                console.log(`从服务器同步了 ${Object.keys(serverData).length} 条打分记录`);
+            }
+        }
+        // 3. 构建复习队列并渲染
+        buildReviewQueue();
+        renderCards();
+        renderPastSessions();
+    })();
     </script>
 </body>
 </html>
