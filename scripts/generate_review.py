@@ -379,9 +379,9 @@ function renderDeck() {{
       + '<div class="card-streak">'+streakText(item)+'</div>'
       + '</div>'
       + '<div class="rating" id="rating'+i+'" style="display:none">'
-      + '<button class="btn forgot" onclick="rate('+i+',\'forgot\')">不认识</button>'
-      + '<button class="btn fuzzy"  onclick="rate('+i+',\'fuzzy\')">模糊</button>'
-      + '<button class="btn known"  onclick="rate('+i+',\'known\')">认识</button>'
+      + '<button class="btn forgot" onclick="rate('+i+',&quot;forgot&quot;)">不认识</button>'
+      + '<button class="btn fuzzy"  onclick="rate('+i+',&quot;fuzzy&quot;)">模糊</button>'
+      + '<button class="btn known"  onclick="rate('+i+',&quot;known&quot;)">认识</button>'
       + '</div>';
     deck.appendChild(div);
   }});
