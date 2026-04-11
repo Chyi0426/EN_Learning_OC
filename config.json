@@ -1,4 +1,6 @@
 {
   "github_pages_url": "https://chyi0426.github.io/EN_Learning_OC/",
-  "github_repo": "Chyi0426/EN_Learning_OC"
+  "github_repo": "Chyi0426/EN_Learning_OC",
+  "local_ip": "192.168.100.12",
+  "sync_port": 7755
 }

@@ -181,6 +181,9 @@ def generate_html(items):
         "example_en": item.get("example_en", ""),
         "example_cn": item.get("example_cn", ""),
     } for item in items], ensure_ascii=False)
+
+    local_ip = CONFIG.get("local_ip", "")
+    sync_port = CONFIG.get("sync_port", 7755)
     
     html = f'''<!DOCTYPE html>
 <html lang="zh-CN">
@@ -409,26 +412,31 @@ def generate_html(items):
     const ALL_ITEMS = {items_json};
     const STORAGE_KEY = 'en_review_data';
     const SESSION_KEY = 'en_review_sessions';
-    const SYNC_SERVER = 'http://localhost:7755';
-
-    let currentIndex = 0;
-    let results = {{}};
-    let reviewQueue = [];
+    const PORT = {sync_port};
+    // 依次尝试 localhost 和局域网 IP
+    const SERVERS = ['http://localhost:' + PORT, 'http://{local_ip}:' + PORT].filter(s => !s.includes('http://:'));
+    let SYNC_SERVER = '';
     let serverAvailable = false;
 
     // ========== 服务器同步 ==========
     async function checkServer() {{
-        try {{
-            const r = await fetch(SYNC_SERVER + '/ping', {{signal: AbortSignal.timeout(800)}});
-            serverAvailable = r.ok;
-        }} catch(e) {{
-            serverAvailable = false;
+        for (const url of SERVERS) {{
+            try {{
+                const r = await fetch(url + '/ping', {{signal: AbortSignal.timeout(1500)}});
+                if (r.ok) {{
+                    SYNC_SERVER = url;
+                    serverAvailable = true;
+                    break;
+                }}
+            }} catch(e) {{}}
         }}
         const dot = document.getElementById('sync-dot');
         const txt = document.getElementById('sync-txt');
         if (dot && txt) {{
             dot.style.color = serverAvailable ? '#34c759' : '#888';
-            txt.textContent = serverAvailable ? '已连接同步服务器' : '离线模式（仅本地）';
+            txt.textContent = serverAvailable
+                ? `已连接同步服务器 (${{SYNC_SERVER}})`
+                : '离线模式（仅本地）';
         }}
     }}
 
