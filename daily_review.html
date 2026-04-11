@@ -116,7 +116,7 @@ h1{text-align:center;font-size:22px;margin:20px 0 4px}
 <div class="footer">EN Learning · 2026-04-12</div>
 
 <script>
-var ITEMS = [{"id": "usage_时间和地点介词_AT_IN_ON_", "word": "时间和地点介词 (AT / IN / ON)", "type": "usage", "meaning": "时间和地点介词的选择取决于", "example_en": "", "example_cn": "", "count": 2}, {"id": "usage_despite_vs_in_spite_of", "word": "despite vs. in spite of", "type": "usage", "meaning": "despite 和 in spite of 都表示\"尽管\"的意思，但在使用场景和正式程度上有区别：", "example_en": "", "example_cn": "", "count": 2}, {"id": "word_scurry", "word": "scurry", "type": "word", "meaning": "v. 碎步疾跑；仓皇奔跑 / n. 快步急跑", "example_en": "Mice scurried across the kitchen floor.", "example_cn": "老鼠在厨房地板上急跑。", "count": 1}, {"id": "word_commodified", "word": "commodified", "type": "word", "meaning": "adj. 商品化的（commodify的过去分词）", "example_en": "Education has become increasingly commodified.", "example_cn": "教育已经越来越商品化。", "count": 1}, {"id": "word_misrepresentation", "word": "misrepresentation", "type": "word", "meaning": "n. 歪曲；误传；虚假陈述", "example_en": "The lawsuit was based on misrepresentation of facts.", "example_cn": "这起诉讼是基于对事实的歪曲。", "count": 1}, {"id": "word_penalty", "word": "penalty", "type": "word", "meaning": "n. 处罚；刑罚；罚款；点球", "example_en": "The penalty for speeding can be a heavy fine.", "example_cn": "超速的处罚可以是一笔巨额罚款。", "count": 1}, {"id": "word_attorney", "word": "attorney", "type": "word", "meaning": "n. 律师；代理人", "example_en": "You should consult an attorney before signing the contract.", "example_cn": "签合同前你应该咨询律师。", "count": 1}, {"id": "word_stereotype", "word": "stereotype", "type": "word", "meaning": "n. 刻板印象；模式化观念 / v. 对形成模式化看法", "example_en": "We should challenge stereotypes rather than accept them.", "example_cn": "我们应该挑战刻板印象而不是接受它们。", "count": 1}, {"id": "word_orient", "word": "orient", "type": "word", "meaning": "v. 适应；使朝向；确定方向 / n. 东方；远东", "example_en": "It took him a while to orient himself in the new city.", "example_cn": "他花了一段时间才在新城市中找到方向。", "count": 1}, {"id": "word_thrill", "word": "thrill", "type": "word", "meaning": "n. 兴奋；激动；震颤感 / v. 使非常兴奋；使非常激动", "example_en": "The roller coaster gave me a real thrill.", "example_cn": "过山车给了我一种真正的兴奋感。", "count": 1}];
+var ITEMS = [{"id": "usage_时间和地点介词_AT_IN_ON_", "word": "时间和地点介词 (AT / IN / ON)", "type": "usage", "meaning": "时间和地点介词的选择取决于", "example_en": "", "example_cn": "", "count": 2}, {"id": "usage_despite_vs_in_spite_of", "word": "despite vs. in spite of", "type": "usage", "meaning": "despite 和 in spite of 都表示\"尽管\"的意思，但在使用场景和正式程度上有区别：", "example_en": "", "example_cn": "", "count": 2}, {"id": "word_fallacy", "word": "fallacy", "type": "word", "meaning": "n. 谬误；谬论；错误推理", "example_en": "It's a common fallacy that more money equals more happiness.", "example_cn": "更多的钱等于更多的幸福是一个常见的谬误。", "count": 1}, {"id": "word_stalemate", "word": "stalemate", "type": "word", "meaning": "n. 僵局；相持 / v. 使陷入僵局", "example_en": "The negotiations ended in a stalemate.", "example_cn": "谈判以僵局告终。", "count": 1}, {"id": "word_squabble", "word": "squabble", "type": "word", "meaning": "n. 争论；口角 / v. （为小事）争吵", "example_en": "The children were squabbling over a toy.", "example_cn": "孩子们在为一个玩具争吵。", "count": 1}, {"id": "word_starvation", "word": "starvation", "type": "word", "meaning": "n. 饥饿；饿死；挨饿", "example_en": "Millions of people face starvation in the region.", "example_cn": "该地区数百万人面临饥饿。", "count": 1}, {"id": "word_portray", "word": "portray", "type": "word", "meaning": "v. 描绘；描写；将描写成；扮演", "example_en": "The movie portrays life in rural China.", "example_cn": "这部电影描绘了中国农村的生活。", "count": 1}, {"id": "word_despite", "word": "despite", "type": "word", "meaning": "尽管、不顾、虽然 / [名词]（较少用）：恶意、蔑视", "example_en": "Despite the challenges, the team succeeded.", "example_cn": "尽管有挑战，团队还是成功了。", "count": 1}, {"id": "grammar_介词短语作定语和状语", "word": "介词短语作定语和状语", "type": "grammar", "meaning": "语法规则 - 查看词库了解详情", "example_en": "", "example_cn": "", "count": 1}, {"id": "word_customize", "word": "customize", "type": "word", "meaning": "v. 定制；自定义", "example_en": "You can customize the settings to suit your preferences.", "example_cn": "你可以自定义设置以适合你的偏好。", "count": 1}];
 var SK = 'enReview2';
 var cur = 0, queue = [], res = {};
 
@@ -206,7 +206,7 @@ function renderDeck() {
       + '<div class="card-word">'+esc(item.word)+'</div>'
       + '<div class="answer" id="ans'+i+'">'
       + '<div class="answer-word">'+esc(item.word)
-      + '<button class="speak-btn" onclick="speak(event,''+esc(item.word)+'')">&#128264;</button>'
+      + '<button class="speak-btn" onclick="speak(event,this)">&#128264;</button>'
       + '</div>'
       + '<div class="answer-meaning">'+esc(item.meaning)+'</div>'
       + exHtml
@@ -336,10 +336,11 @@ function replayAll() {
   renderDeck();
 }
 
-function speak(e, word) {
+function speak(e, btn) {
   e.stopPropagation();
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
+  var word = btn.closest('.answer').querySelector('.answer-word').childNodes[0].textContent.trim();
   var u = new SpeechSynthesisUtterance(word);
   u.lang = 'en-GB';
   u.rate = 0.85;

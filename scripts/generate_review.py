@@ -370,7 +370,7 @@ function renderDeck() {{
       + '<div class="card-word">'+esc(item.word)+'</div>'
       + '<div class="answer" id="ans'+i+'">'
       + '<div class="answer-word">'+esc(item.word)
-      + '<button class="speak-btn" onclick="speak(event,\''+esc(item.word)+'\')">&#128264;</button>'
+      + '<button class="speak-btn" onclick="speak(event,this)">&#128264;</button>'
       + '</div>'
       + '<div class="answer-meaning">'+esc(item.meaning)+'</div>'
       + exHtml
@@ -500,10 +500,11 @@ function replayAll() {{
   renderDeck();
 }}
 
-function speak(e, word) {{
+function speak(e, btn) {{
   e.stopPropagation();
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
+  var word = btn.closest('.answer').querySelector('.answer-word').childNodes[0].textContent.trim();
   var u = new SpeechSynthesisUtterance(word);
   u.lang = 'en-GB';
   u.rate = 0.85;
