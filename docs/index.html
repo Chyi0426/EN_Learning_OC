@@ -146,10 +146,6 @@
     <div class="header">
         <h1>Daily English Review</h1>
         <div class="date">2026-04-12</div>
-        <div style="font-size:12px;margin-top:6px">
-            <span id="sync-dot" style="color:#888">●</span>
-            <span id="sync-txt" style="color:#888;margin-left:4px">检查同步状态...</span>
-        </div>
     </div>
     <div class="stats">
         <div class="stat-item">
@@ -222,25 +218,22 @@
     </div>
 
     <script>
-    const ALL_ITEMS = [{"id": "usage_时间和地点介词_(AT___IN___ON)", "word": "时间和地点介词 (AT / IN / ON)", "meaning": "时间和地点介词的选择取决于**范围的大小和具体程度**：<br><br>| 介词 | 时间用法 | 地点用法 | 核心特征 |<br>|------|---------|---------|---------|<br>| **AT** | 具体时刻（精确点） | 具体建筑/地点（点状） | 🎯 精确、点状 |<br>| **IN** | 较长时期（月/季/年） | 地理范围/内部空间 | 📦 范围、内部 |<br>| **ON** | 具体日期/星期 | 表面、街道、方向 | 📄 表面、接触 |", "count": 2, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "usage_despite_vs._in_spite_of", "word": "despite vs. in spite of", "meaning": "despite 和 in spite of 都表示\"尽管\"的意思，但在使用场景和正式程度上有区别：<br><br>| 对比项 | despite | in spite of |<br>|-------|---------|------------|<br>| 正式程度 | 更正式、更学术 | 较口语化、较随意 |<br>| 使用频率 | 高（特别在书面语中） | 中等 |<br>| 语言风格 | 简洁、直接 | 相对冗长 |", "count": 2, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "vocabulary_maven", "word": "maven", "meaning": "- [名词]：专家、大师、权威人士（在某个领域，通常非正式）", "count": 1, "type": "vocabulary", "example_en": "*a tech maven* vs. *a computer expert*", "example_cn": "史蒂夫·乔布斯是一位科技大师，革新了整个产业。"}, {"id": "vocabulary_smokescreen", "word": "smokescreen", "meaning": "- n. 烟幕；障眼法", "count": 1, "type": "vocabulary", "example_en": "His apology was just a smokescreen to hide his real intentions.", "example_cn": "他的道歉只是一个烟幕，用来掩盖他真正的意图。"}, {"id": "vocabulary_scurry", "word": "scurry", "meaning": "- v. 碎步疾跑；仓皇奔跑<br>&nbsp;&nbsp;- n. 快步急跑", "count": 1, "type": "vocabulary", "example_en": "Mice scurried across the kitchen floor.", "example_cn": "老鼠在厨房地板上急跑。"}, {"id": "vocabulary_starvation", "word": "starvation", "meaning": "- n. 饥饿；饿死；挨饿", "count": 1, "type": "vocabulary", "example_en": "Millions of people face starvation in the region.", "example_cn": "该地区数百万人面临饥饿。"}, {"id": "vocabulary_capitulation", "word": "capitulation", "meaning": "- n. 投降；屈服", "count": 1, "type": "vocabulary", "example_en": "The capitulation of the army ended the war.", "example_cn": "军队的投降结束了战争。"}, {"id": "vocabulary_furniture", "word": "furniture", "meaning": "- [名词]：家具（统称，无复数形式）", "count": 1, "type": "vocabulary", "example_en": "We need to buy some furniture for the new apartment.", "example_cn": "我们需要为新公寓买一些家具。"}, {"id": "vocabulary_punk", "word": "punk", "meaning": "- [名词]：朋克（音乐/亚文化风格）；小混混；废物<br>&nbsp;&nbsp;- [形容词]：朋克风格的；劣质的；差劲的", "count": 1, "type": "vocabulary", "example_en": "*a punk band* vs. *a political rebel*", "example_cn": "她从青少年时期就开始喜欢朋克音乐了。"}, {"id": "vocabulary_craft", "word": "craft", "meaning": "- n. 工艺；手艺；飞行器<br>&nbsp;&nbsp;- v. 精心制作", "count": 1, "type": "vocabulary", "example_en": "She spent hours crafting a beautiful letter.", "example_cn": "她花了几个小时精心制作了一封漂亮的信。"}];
+    const ALL_ITEMS = [{"id": "usage_时间和地点介词_(AT___IN___ON)", "word": "时间和地点介词 (AT / IN / ON)", "meaning": "时间和地点介词的选择取决于**范围的大小和具体程度**：<br><br>| 介词 | 时间用法 | 地点用法 | 核心特征 |<br>|------|---------|---------|---------|<br>| **AT** | 具体时刻（精确点） | 具体建筑/地点（点状） | 🎯 精确、点状 |<br>| **IN** | 较长时期（月/季/年） | 地理范围/内部空间 | 📦 范围、内部 |<br>| **ON** | 具体日期/星期 | 表面、街道、方向 | 📄 表面、接触 |", "count": 2, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "usage_despite_vs._in_spite_of", "word": "despite vs. in spite of", "meaning": "despite 和 in spite of 都表示\"尽管\"的意思，但在使用场景和正式程度上有区别：<br><br>| 对比项 | despite | in spite of |<br>|-------|---------|------------|<br>| 正式程度 | 更正式、更学术 | 较口语化、较随意 |<br>| 使用频率 | 高（特别在书面语中） | 中等 |<br>| 语言风格 | 简洁、直接 | 相对冗长 |", "count": 2, "type": "usage", "example_en": "", "example_cn": ""}, {"id": "vocabulary_consumers", "word": "consumers", "meaning": "- n. 消费者（consumer的复数）", "count": 1, "type": "vocabulary", "example_en": "Consumers are becoming more aware of their rights.", "example_cn": "消费者越来越意识到自己的权利。"}, {"id": "vocabulary_squabble", "word": "squabble", "meaning": "- n. 争论；口角<br>&nbsp;&nbsp;- v. （为小事）争吵", "count": 1, "type": "vocabulary", "example_en": "The children were squabbling over a toy.", "example_cn": "孩子们在为一个玩具争吵。"}, {"id": "vocabulary_pharmaceutical", "word": "pharmaceutical", "meaning": "- adj. 制药的；配药的<br>&nbsp;&nbsp;- n. 药物", "count": 1, "type": "vocabulary", "example_en": "The pharmaceutical industry invests billions in research.", "example_cn": "制药行业在研究上投入了数十亿。"}, {"id": "vocabulary_dynamic", "word": "dynamic", "meaning": "- adj. 充满活力的；不断变化的<br>&nbsp;&nbsp;- n. 动力；动力学", "count": 1, "type": "vocabulary", "example_en": "The city has a dynamic and exciting atmosphere.", "example_cn": "这座城市有一种充满活力和令人兴奋的氛围。"}, {"id": "vocabulary_randomly", "word": "randomly", "meaning": "- adv. 随机地；随意地", "count": 1, "type": "vocabulary", "example_en": "The names were randomly selected from a list.", "example_cn": "名字是从列表中随机选出的。"}, {"id": "vocabulary_dystopia", "word": "dystopia", "meaning": "- n. 反乌托邦；极坏的社会", "count": 1, "type": "vocabulary", "example_en": "The novel depicts a dystopia where freedom is forbidden.", "example_cn": "这部小说描绘了一个自由被禁止的反乌托邦世界。"}, {"id": "vocabulary_tailor", "word": "tailor", "meaning": "- v. 专门制作；定做<br>&nbsp;&nbsp;- n. （尤指定制男装的）裁缝", "count": 1, "type": "vocabulary", "example_en": "We can tailor the program to your specific needs.", "example_cn": "我们可以根据你的具体需求定制这个方案。"}, {"id": "vocabulary_orchestrator", "word": "orchestrator", "meaning": "- n. 管弦乐编曲者；策划者；协调者", "count": 1, "type": "vocabulary", "example_en": "She was the orchestrator of the entire event.", "example_cn": "她是整个活动的策划者。"}];
     const STORAGE_KEY = 'en_review_data';
     const SESSION_KEY = 'en_review_sessions';
-    const PORT = 7755;
-    // 依次尝试 localhost 和局域网 IP
-    const SERVERS = ['http://localhost:' + PORT, 'http://192.168.100.12:' + PORT].filter(s => !s.includes('http://:'));
-    let SYNC_SERVER = '';
-    let serverAvailable = false;
 
-    // ========== 服务器同步 ==========
-    async function checkServer() {
-        for (const url of SERVERS) {
-            try {
-                const r = await fetch(url + '/ping', {signal: AbortSignal.timeout(1500)});
-                if (r.ok) {
-                    SYNC_SERVER = url;
-                    serverAvailable = true;
-                    break;
-                }
+    let currentIndex = 0;
+    let results = {};
+    let reviewQueue = [];
+
+    // ========== 本地存储 ==========
+    function getReviewData() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+        catch(e) { return {}; }
+    }
+    function saveReviewData(data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
             } catch(e) {}
         }
         const dot = document.getElementById('sync-dot');
@@ -590,25 +583,9 @@
     }
 
     // ========== 初始化 ==========
-    (async () => {
-        // 1. 检查服务器是否在线
-        await checkServer();
-        // 2. 如果服务器在线，拉取最新打分记录并合并到 localStorage
-        if (serverAvailable) {
-            const serverData = await loadFromServer();
-            if (serverData && Object.keys(serverData).length > 0) {
-                const local = getReviewData();
-                // 合并：以服务器为准（服务器数据更新）
-                const merged = Object.assign({}, local, serverData);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-                console.log(`从服务器同步了 ${Object.keys(serverData).length} 条打分记录`);
-            }
-        }
-        // 3. 构建复习队列并渲染
-        buildReviewQueue();
-        renderCards();
-        renderPastSessions();
-    })();
+    buildReviewQueue();
+    renderCards();
+    renderPastSessions();
     </script>
 </body>
 </html>

@@ -182,8 +182,6 @@ def generate_html(items):
         "example_cn": item.get("example_cn", ""),
     } for item in items], ensure_ascii=False)
 
-    local_ip = CONFIG.get("local_ip", "")
-    sync_port = CONFIG.get("sync_port", 7755)
     
     html = f'''<!DOCTYPE html>
 <html lang="zh-CN">
@@ -333,10 +331,6 @@ def generate_html(items):
     <div class="header">
         <h1>Daily English Review</h1>
         <div class="date">{today}</div>
-        <div style="font-size:12px;margin-top:6px">
-            <span id="sync-dot" style="color:#888">●</span>
-            <span id="sync-txt" style="color:#888;margin-left:4px">检查同步状态...</span>
-        </div>
     </div>
     <div class="stats">
         <div class="stat-item">
@@ -412,22 +406,19 @@ def generate_html(items):
     const ALL_ITEMS = {items_json};
     const STORAGE_KEY = 'en_review_data';
     const SESSION_KEY = 'en_review_sessions';
-    const PORT = {sync_port};
-    // 依次尝试 localhost 和局域网 IP
-    const SERVERS = ['http://localhost:' + PORT, 'http://{local_ip}:' + PORT].filter(s => !s.includes('http://:'));
-    let SYNC_SERVER = '';
-    let serverAvailable = false;
 
-    // ========== 服务器同步 ==========
-    async function checkServer() {{
-        for (const url of SERVERS) {{
-            try {{
-                const r = await fetch(url + '/ping', {{signal: AbortSignal.timeout(1500)}});
-                if (r.ok) {{
-                    SYNC_SERVER = url;
-                    serverAvailable = true;
-                    break;
-                }}
+    let currentIndex = 0;
+    let results = {{}};
+    let reviewQueue = [];
+
+    // ========== 本地存储 ==========
+    function getReviewData() {{
+        try {{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {{}}; }}
+        catch(e) {{ return {{}}; }}
+    }}
+    function saveReviewData(data) {{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }}
             }} catch(e) {{}}
         }}
         const dot = document.getElementById('sync-dot');
@@ -777,25 +768,9 @@ def generate_html(items):
     }}
 
     // ========== 初始化 ==========
-    (async () => {{
-        // 1. 检查服务器是否在线
-        await checkServer();
-        // 2. 如果服务器在线，拉取最新打分记录并合并到 localStorage
-        if (serverAvailable) {{
-            const serverData = await loadFromServer();
-            if (serverData && Object.keys(serverData).length > 0) {{
-                const local = getReviewData();
-                // 合并：以服务器为准（服务器数据更新）
-                const merged = Object.assign({{}}, local, serverData);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-                console.log(`从服务器同步了 ${{Object.keys(serverData).length}} 条打分记录`);
-            }}
-        }}
-        // 3. 构建复习队列并渲染
-        buildReviewQueue();
-        renderCards();
-        renderPastSessions();
-    }})();
+    buildReviewQueue();
+    renderCards();
+    renderPastSessions();
     </script>
 </body>
 </html>'''
