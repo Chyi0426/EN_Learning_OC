@@ -134,13 +134,64 @@ def parse_grammar(filepath):
                           'type': 'grammar', 'example_en': '', 'example_cn': ''})
     return items
 
-def select_items(all_items, n=10):
-    weak   = [i for i in all_items if i['count'] >= 3]
-    medium = [i for i in all_items if i['count'] == 2]
-    new    = [i for i in all_items if i['count'] == 1]
-    random.shuffle(new)
-    pool = weak + medium + new
-    return pool[:n]
+def select_items(all_items, n=999):
+    """返回所有需要今天复习的词，不设上限"""
+    st = {}
+    progress_file = os.path.join(BASE_DIR, "progress.json")
+    if os.path.exists(progress_file):
+        try:
+            with open(progress_file, encoding="utf-8") as f:
+                st = json.load(f)
+        except Exception:
+            st = {}
+
+    def days_since(iso):
+        if not iso:
+            return 999
+        try:
+            from datetime import timezone
+            last = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+            now = datetime.now(timezone.utc)
+            return (now - last).days
+        except Exception:
+            return 999
+
+    def needs_review(item_id):
+        d = st.get(item_id)
+        if not d or not d.get("lastDate"):
+            return True
+        gaps = [1, 2, 4, 7, 14, 30, 60]
+        last = d.get("last", "")
+        streak = d.get("streak", 0)
+        if last == "forgot":
+            return days_since(d["lastDate"]) >= 1
+        if last == "fuzzy":
+            return days_since(d["lastDate"]) >= 2
+        gap = gaps[min(streak, len(gaps) - 1)]
+        return days_since(d["lastDate"]) >= gap
+
+    need = []
+    rest = []
+    for item in all_items:
+        item_id = item["type"] + "_" + re.sub(r"\W+", "_", item["word"])
+        item["id"] = item_id
+        d = st.get(item_id)
+        if needs_review(item_id):
+            item["_streak"] = d.get("streak", 0) if d else 0
+            item["_last"] = d.get("last", "") if d else ""
+            need.append(item)
+        # 不需要今天复习的就不加入
+
+    # 排序：不认识 > 模糊 > 新词 > 认识中（按 streak 升序）
+    def sort_key(item):
+        last = item.get("_last", "")
+        if last == "forgot":  return (0, 0)
+        if last == "fuzzy":   return (1, 0)
+        if last == "":        return (2, 0)
+        return (3, item.get("_streak", 0))
+
+    need.sort(key=sort_key)
+    return need
 
 def make_html(items):
     today = datetime.now().strftime('%Y-%m-%d')
@@ -269,6 +320,10 @@ h1{{text-align:center;font-size:22px;margin:20px 0 4px}}
   <div class="done-actions">
     <button class="nav-btn" onclick="replayWeak()">重练不认识+模糊</button>
     <button class="nav-btn" onclick="replayAll()">全部重新来</button>
+    <button class="nav-btn" onclick="saveProgress()" style="background:rgba(52,199,89,.25);border-color:#34c759">💾 保存进度</button>
+  </div>
+  <div id="saveHint" style="margin-top:12px;font-size:12px;color:#aaa;display:none">
+    progress.json 已下载，请将它放到 EN_Learning_OC 文件夹里覆盖同名文件。
   </div>
 </div>
 
@@ -478,6 +533,16 @@ function showDone() {{
     html += '<div class="done-row"><span>'+dot+' '+esc(item.word)+'</span><span>'+label+'</span></div>';
   }});
   document.getElementById('dList').innerHTML = html;
+}}
+
+function saveProgress() {{
+  var st = store();
+  var blob = new Blob([JSON.stringify(st, null, 2)], {{type:'application/json'}});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'progress.json';
+  a.click();
+  document.getElementById('saveHint').style.display = 'block';
 }}
 
 function replayWeak() {{
